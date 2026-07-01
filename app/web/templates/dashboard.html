@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | BrandOS Console{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Visão Geral</h1>
+        <p class="text-vercelMuted mt-1 text-sm">Resumo do status das suas peças de conteúdo.</p>
+    </div>
+    <div>
+        <a href="/generate" class="inline-flex items-center gap-2 bg-vercelAccent hover:bg-blue-400 text-white px-4 py-2 rounded font-medium transition-colors text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Gerar nova semana
+        </a>
+    </div>
+</div>
+
+<!-- Sugestão de Ação -->
+{% if metrics.pending_items > 0 %}
+<div class="mb-8 p-4 rounded-lg bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
+    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <div>
+        <h3 class="text-sm font-semibold text-blue-200">Próxima ação sugerida</h3>
+        <p class="text-sm text-blue-300/80 mt-1">Revisar e publicar as {{ metrics.pending_items }} peças pendentes listadas na fila de publicação.</p>
+    </div>
+</div>
+{% elif metrics.total_projects > 0 %}
+<div class="mb-8 p-4 rounded-lg bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
+    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    <div>
+        <h3 class="text-sm font-semibold text-blue-200">Próxima ação sugerida</h3>
+        <p class="text-sm text-blue-300/80 mt-1">Sua fila está vazia! Considere gerar uma nova semana de conteúdo.</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Metrics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
+    <div class="card p-5">
+        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Peças Geradas</h3>
+        <p class="mt-2 text-2xl font-bold text-white">{{ metrics.total_items }}</p>
+    </div>
+    
+    <div class="card p-5 border-yellow-500/20">
+        <h3 class="text-xs font-semibold text-yellow-500/80 uppercase tracking-wider">Prontas para Publicar</h3>
+        <p class="mt-2 text-2xl font-bold text-yellow-400">{{ metrics.ready_items }}</p>
+    </div>
+
+    <div class="card p-5 border-green-500/20">
+        <h3 class="text-xs font-semibold text-green-500/80 uppercase tracking-wider">Publicadas</h3>
+        <p class="mt-2 text-2xl font-bold text-green-400">{{ metrics.published_items }}</p>
+    </div>
+
+    <div class="card p-5">
+        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Pendentes</h3>
+        <p class="mt-2 text-2xl font-bold text-white">{{ metrics.pending_items }}</p>
+        <p class="text-[10px] text-vercelMuted mt-1 tracking-wide">{{ metrics.pending_items }} peças aguardando revisão</p>
+    </div>
+
+    <div class="card p-5">
+        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Projetos Ativos</h3>
+        <p class="mt-2 text-2xl font-bold text-vercelAccent">{{ metrics.total_projects }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    <!-- Fila de Publicação -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-4">Fila de Publicação</h2>
+        <div class="card overflow-hidden">
+            {% if not metrics.queue %}
+            <div class="p-6 text-center text-vercelMuted text-sm">Nenhum item na fila.</div>
+            {% else %}
+            <div class="divide-y divide-vercelBorder">
+                {% for q in metrics.queue %}
+                <a href="/publications/{{ q.folder_id }}/item/{{ q.item_id }}" class="p-4 flex items-center justify-between hover:bg-white/5 transition-colors block">
+                    <div>
+                        <p class="text-sm font-medium text-white">{{ q.title }}</p>
+                        <p class="text-xs text-vercelMuted mt-0.5">{{ q.project }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="badge badge-{{ q.status }}">{{ q.status | translate_status }}</span>
+                        <svg class="w-4 h-4 text-vercelMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Última Atividade -->
+    <div>
+        <h2 class="text-lg font-semibold text-white mb-4">Última Atividade</h2>
+        <div class="card overflow-hidden">
+            {% if not metrics.recent_activity %}
+            <div class="p-6 text-center text-vercelMuted text-sm">Nenhuma atividade recente registrada.</div>
+            {% else %}
+            <div class="divide-y divide-vercelBorder">
+                {% for act in metrics.recent_activity %}
+                <div class="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors">
+                    <div class="mt-1">
+                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-white">{{ act.action }}</p>
+                        <p class="text-xs text-vercelMuted mt-0.5">
+                            {{ act.project }} 
+                            {% if act.time %}
+                                {% set t_parts = act.time.split('T') %}
+                                &middot; {{ t_parts[0] }} 
+                                {% if t_parts|length > 1 %} &middot; {{ t_parts[1][:5] }} {% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

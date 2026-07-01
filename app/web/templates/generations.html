@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Nova Semana | BrandOS Console{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h1 class="text-3xl font-bold tracking-tight">Gerar Nova Semana</h1>
+        <p class="text-vercelMuted mt-2">Inicie o workflow de planejamento, criação e revisão automática via IA.</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+    <!-- MODO AUTOMÁTICO -->
+    <div class="card p-6 rounded-lg">
+        <h2 class="text-xl font-bold mb-2">Modo Automático</h2>
+        <p class="text-vercelMuted text-sm mb-6">O BrandOS (CMO Agent) assumirá o controle total. Ele lerá o histórico, fará a rotação evitando o último projeto publicado e definirá um novo ângulo editorial sozinho.</p>
+        
+        <form action="/generate/weekly" method="POST">
+            <button type="submit" class="w-full bg-vercelAccent hover:bg-blue-400 text-white font-medium py-3 px-4 rounded transition-colors" onclick="this.innerHTML='Gerando... aguarde'; this.classList.add('opacity-50');">
+                Gerar Semana Automaticamente
+            </button>
+        </form>
+    </div>
+
+    <!-- MODO DIRECIONADO -->
+    <div class="card p-6 rounded-lg border-dashed border-2 border-vercelBorder bg-transparent">
+        <h2 class="text-xl font-bold mb-2">Modo Direcionado (Briefing)</h2>
+        <p class="text-vercelMuted text-sm mb-6">Você força a estratégia. Escolha o projeto e dê instruções específicas que o CMO deve seguir.</p>
+        
+        <form action="/generate/briefing" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-vercelMuted mb-1">Projeto em Foco</label>
+                <select name="project" class="w-full bg-vercelPanel border border-vercelBorder text-white rounded p-2 text-sm focus:outline-none focus:border-vercelAccent" required>
+                    <option value="">Selecione um projeto...</option>
+                    {% for p in projects %}
+                        {% if p.name %}
+                            <option value="{{ p.name }}">{{ p.name }}</option>
+                        {% endif %}
+                    {% endfor %}
+                    <option value="BrandOS">BrandOS (Bastidor Geral)</option>
+                    <option value="Carreira / Transição">Carreira / Transição</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-vercelMuted mb-1">Briefing (Opcional mas recomendado)</label>
+                <textarea name="briefing" rows="4" class="w-full bg-vercelPanel border border-vercelBorder text-white rounded p-2 text-sm focus:outline-none focus:border-vercelAccent" placeholder="Ex: Quero focar nos bastidores técnicos do scraping via Playwright, sem citar campanhas específicas."></textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-white text-black hover:bg-gray-200 font-medium py-3 px-4 rounded transition-colors" onclick="this.innerHTML='Gerando... aguarde'; this.classList.add('opacity-50');">
+                Gerar com Briefing
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<div class="mt-8 bg-blue-900/20 border border-blue-800/50 rounded-lg p-4 text-sm text-blue-200">
+    <strong>Nota:</strong> A geração leva em torno de 2 a 4 minutos. O painel ficará carregando enquanto os agentes CMO, Estrategista, Copywriter, Editor, Designer e Publisher trabalham em segundo plano. Não feche a aba.
+</div>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhe: {{ folder_id }} | BrandOS Console{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+    <div>
+        <a href="/publications" class="text-vercelAccent text-sm hover:text-blue-400 mb-3 inline-flex items-center gap-1 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Voltar para gerações
+        </a>
+        <h1 class="text-3xl font-bold tracking-tight text-white">Semana {{ details.date }} — {{ details.project }}</h1>
+        <p class="text-vercelMuted mt-1">Tema: {{ details.theme }}</p>
+    </div>
+    <div>
+        <span class="badge badge-{{ details.status }} text-sm px-3 py-1">{{ details.status | translate_status }}</span>
+    </div>
+</div>
+
+{% if not details %}
+<div class="card p-6 text-center text-red-400">
+    Pasta não encontrada ou vazia no histórico.
+</div>
+{% else %}
+
+<!-- Resumo da Semana -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {% set existing_items = details["items"] | selectattr("file_exists", "equalto", true) | list %}
+    {% set missing_items = details["items"] | selectattr("file_exists", "equalto", false) | list %}
+    {% set total_items = existing_items | length %}
+    {% set pub_items = existing_items | selectattr("status", "equalto", "published") | list | length %}
+    {% set pend_items = total_items - pub_items %}
+    
+    <div class="card p-4 border-l-2 border-l-vercelBorder border-t-0 border-r-0 border-b-0 rounded-none bg-transparent shadow-none">
+        <p class="text-xs text-vercelMuted uppercase tracking-wider font-semibold">Itens Principais</p>
+        <p class="text-2xl font-bold text-white mt-1">{{ total_items }}</p>
+    </div>
+    
+    <div class="card p-4 border-l-2 border-l-green-500/50 border-t-0 border-r-0 border-b-0 rounded-none bg-transparent shadow-none">
+        <p class="text-xs text-green-500/80 uppercase tracking-wider font-semibold">Publicados</p>
+        <p class="text-2xl font-bold text-green-400 mt-1">{{ pub_items }}</p>
+    </div>
+
+    <div class="card p-4 border-l-2 border-l-yellow-500/50 border-t-0 border-r-0 border-b-0 rounded-none bg-transparent shadow-none">
+        <p class="text-xs text-yellow-500/80 uppercase tracking-wider font-semibold">Pendentes</p>
+        <p class="text-2xl font-bold text-yellow-400 mt-1">{{ pend_items }}</p>
+    </div>
+</div>
+
+<div class="card overflow-hidden">
+    <div class="table-container overflow-x-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-black/20">
+                <tr>
+                    <th>Peça</th>
+                    <th>Tipo</th>
+                    <th>Arquivo</th>
+                    <th>Status</th>
+                    <th class="text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-vercelBorder">
+                {% for item in existing_items %}
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="font-medium text-white">{{ item.title }}</td>
+                    <td class="text-vercelMuted text-xs">{{ item.type }}</td>
+                    <td class="text-vercelMuted font-mono text-xs">{{ item.file }}</td>
+                    <td>
+                        <span class="badge badge-{{ item.status }}">{{ item.status | translate_status }}</span>
+                    </td>
+                    <td class="text-right flex items-center justify-end gap-1.5 flex-wrap w-full max-w-xs">
+                        <!-- Copiar Direto -->
+                        <div id="raw-{{ item.id }}" class="hidden">{{ item.content }}</div>
+                        <button onclick="copyToClipboard('raw-{{ item.id }}')" class="px-2 py-1 text-xs text-blue-400 hover:text-blue-300 border border-transparent hover:border-blue-500/30 rounded bg-blue-500/10 transition-colors" title="Copiar Texto">
+                            Copiar
+                        </button>
+                        
+                        <!-- Abrir Arquivo -->
+                        <button onclick="showFileModal('{{ item.id }}')" class="px-2 py-1 text-xs text-vercelMuted hover:text-white border border-transparent hover:border-vercelBorder rounded bg-white/5 transition-colors" title="Visualizar">
+                            Ver
+                        </button>
+                        
+                        <!-- Marcar Pronto -->
+                        {% if item.status != 'ready_to_publish' and item.status != 'published' %}
+                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=ready_to_publish" method="POST" class="inline">
+                            <button type="submit" class="px-2 py-1 text-xs text-yellow-400 hover:text-yellow-300 border border-transparent hover:border-yellow-500/30 rounded bg-yellow-500/10 transition-colors">
+                                Pronto
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Marcar Revisar -->
+                        {% if item.status != 'needs_revision' and item.status != 'published' %}
+                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=needs_revision" method="POST" class="inline">
+                            <button type="submit" class="px-2 py-1 text-xs text-red-400 hover:text-red-300 border border-transparent hover:border-red-500/30 rounded bg-red-500/10 transition-colors">
+                                Revisar
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <!-- Marcar Publicado -->
+                        {% if item.status != 'published' %}
+                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=published" method="POST" class="inline">
+                            <button type="submit" class="px-2 py-1 text-xs text-green-400 hover:text-green-300 border border-transparent hover:border-green-500/30 rounded bg-green-500/10 transition-colors">
+                                Publicar
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <!-- Ignorar -->
+                        {% if item.status != 'skipped' %}
+                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=skipped" method="POST" class="inline">
+                            <button type="submit" class="px-2 py-1 text-xs text-vercelMuted hover:text-gray-300 border border-transparent hover:border-vercelBorder rounded bg-white/5 transition-colors">
+                                Ignorar
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Secao de Itens Ausentes -->
+{% if missing_items %}
+<div class="mt-8 pt-6 border-t border-vercelBorder">
+    <h3 class="text-sm font-semibold text-vercelMuted mb-4">Arquivos ausentes (gerações antigas)</h3>
+    <div class="card overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-black/40 border-b border-vercelBorder text-xs uppercase tracking-wider text-vercelMuted">
+                <tr>
+                    <th class="p-4 font-semibold">Peça</th>
+                    <th class="p-4 font-semibold">Tipo</th>
+                    <th class="p-4 font-semibold">Arquivo</th>
+                    <th class="p-4 font-semibold">Status</th>
+                    <th class="p-4 font-semibold text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-vercelBorder">
+                {% for item in missing_items %}
+                <tr class="hover:bg-white/5 transition-colors group opacity-60 grayscale">
+                    <td class="p-4">
+                        <div class="font-medium text-white">{{ item.title }}</div>
+                    </td>
+                    <td class="p-4 text-vercelMuted text-xs">{{ item.type }}</td>
+                    <td class="p-4 font-mono text-[10px] text-vercelMuted">{{ item.file }}</td>
+                    <td class="p-4">
+                        <span class="badge badge-{{ item.status }}">{{ item.status | translate_status }}</span>
+                    </td>
+                    <td class="p-4 text-right flex items-center justify-end gap-1.5 flex-wrap w-full max-w-xs">
+                        <button disabled class="px-2 py-1 text-xs text-vercelMuted border border-transparent rounded cursor-not-allowed">Copiar</button>
+                        <button disabled class="px-2 py-1 text-xs text-vercelMuted border border-transparent rounded cursor-not-allowed">Ver</button>
+                        
+                        <!-- Ignorar -->
+                        {% if item.status != 'skipped' %}
+                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=skipped" method="POST" class="inline">
+                            <button type="submit" class="px-2 py-1 text-xs text-white hover:text-gray-300 border border-transparent hover:border-vercelBorder rounded bg-white/5 transition-colors">
+                                Ignorar
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Container (Hidden by default) -->
+{% for item in existing_items %}
+<div id="modal-{{ item.id }}" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4">
+    <div class="card w-full max-w-4xl max-h-[90vh] flex flex-col border border-vercelBorder shadow-2xl">
+        
+        <div class="flex items-center justify-between p-4 border-b border-vercelBorder">
+            <h3 class="text-lg font-bold text-white">{{ item.title }} <span class="text-xs text-vercelMuted font-normal ml-2 font-mono">{{ item.file }}</span></h3>
+            <div class="flex items-center gap-3">
+                <button onclick="copyToClipboard('content-{{ item.id }}')" class="flex items-center gap-1 text-xs bg-vercelAccent hover:bg-blue-400 text-white px-3 py-1.5 rounded transition-colors font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Copiar
+                </button>
+                <button onclick="closeModal('{{ item.id }}')" class="text-vercelMuted hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1 bg-black/40">
+            <pre id="content-{{ item.id }}" class="text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{{ item.content }}</pre>
+        </div>
+        
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    function showFileModal(id) {
+        document.getElementById('modal-' + id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById('modal-' + id).classList.add('hidden');
+    }
+    
+    // Fechar ao clicar fora
+    document.querySelectorAll('[id^="modal-"]').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if(e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

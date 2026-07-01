@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico | BrandOS Console{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold tracking-tight">Histórico de Publicações</h1>
+    <p class="text-vercelMuted mt-2">Log extraído de data/registry/publication-log.json</p>
+</div>
+
+<div class="card overflow-x-auto">
+    {% if not history %}
+    <p class="text-vercelMuted text-center py-4">O histórico está vazio.</p>
+    {% else %}
+    <table class="w-full text-left text-sm">
+        <thead class="border-b border-vercelBorder text-vercelMuted">
+            <tr>
+                <th class="pb-3 px-4 font-medium">Data</th>
+                <th class="pb-3 px-4 font-medium">Projeto</th>
+                <th class="pb-3 px-4 font-medium">Formato</th>
+                <th class="pb-3 px-4 font-medium">Título</th>
+                <th class="pb-3 px-4 font-medium">Status</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-vercelBorder">
+            {% for h in history | reverse %}
+            <tr class="hover:bg-vercelBorder/20 transition-colors">
+                <td class="py-3 px-4 text-vercelMuted">{{ h.date }}</td>
+                <td class="py-3 px-4 font-medium text-white">{{ h.project }}</td>
+                <td class="py-3 px-4 text-vercelMuted">{{ h.format }}</td>
+                <td class="py-3 px-4">{{ h.title }}</td>
+                <td class="py-3 px-4">
+                    <span class="badge badge-{{ h.status }}">{{ h.status | translate_status }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endblock %}
