@@ -1,122 +1,262 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | BrandOS Console{% endblock %}
+{% block title %}BrandOS | Command Center{% endblock %}
 
 {% block content %}
-<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-    <div>
-        <h1 class="text-3xl font-bold tracking-tight text-white">Visão Geral</h1>
-        <p class="text-vercelMuted mt-1 text-sm">Resumo do status das suas peças de conteúdo.</p>
+
+<!-- Hero Command Center -->
+<div class="mb-10 hero-panel rounded-2xl p-8 md:p-12 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
+    <!-- Abstract Tech Decor -->
+    <div class="abstract-orbit w-[600px] h-[600px] -right-[200px] -top-[300px] pointer-events-none opacity-50"></div>
+    <div class="abstract-orbit w-[400px] h-[400px] -right-[100px] -top-[150px] pointer-events-none opacity-30" style="animation-direction: reverse; animation-duration: 40s;"></div>
+    
+    <div class="absolute right-[5%] top-[15%] hidden lg:flex flex-col gap-3 opacity-60 pointer-events-none">
+        <div class="bg-white/5 border border-white/10 backdrop-blur-md rounded-lg p-3 w-48 shadow-lg transform translate-x-4 animate-pulse" style="animation-duration: 4s;">
+            <div class="h-1 w-1/3 bg-brandAccentPurple rounded mb-2"></div>
+            <div class="h-1 w-2/3 bg-white/20 rounded"></div>
+        </div>
+        <div class="bg-white/5 border border-white/10 backdrop-blur-md rounded-lg p-3 w-40 shadow-lg transform -translate-x-2 animate-pulse" style="animation-duration: 5s; animation-delay: 1s;">
+            <div class="h-1 w-1/2 bg-brandAccent rounded mb-2"></div>
+            <div class="flex gap-1">
+                <div class="h-1 w-1/4 bg-white/20 rounded"></div>
+                <div class="h-1 w-1/4 bg-white/20 rounded"></div>
+            </div>
+        </div>
+        <div class="bg-white/5 border border-white/10 backdrop-blur-md rounded-lg p-3 w-32 shadow-lg transform translate-x-8 animate-pulse" style="animation-duration: 3.5s; animation-delay: 2s;">
+            <div class="h-1 w-full bg-white/10 rounded"></div>
+        </div>
     </div>
-    <div>
-        <a href="/generate" class="inline-flex items-center gap-2 bg-vercelAccent hover:bg-blue-400 text-white px-4 py-2 rounded font-medium transition-colors text-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Gerar nova semana
-        </a>
+    
+    <div class="relative z-10 max-w-3xl">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-brandAccentPurple animate-pulse"></span>
+                AI Core Active
+            </span>
+            <span class="text-xs font-mono text-brandMuted uppercase tracking-widest">Alpha</span>
+        </div>
+        
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
+            BrandOS <span class="text-transparent bg-clip-text bg-gradient-to-r from-brandAccentPurple to-brandAccent">Command Center</span>
+        </h1>
+        
+        <p class="text-brandSecondary text-base md:text-lg max-w-2xl leading-relaxed mb-6 font-medium">
+            Sistema operacional de marca pessoal com IA para planejar, gerar, revisar e registrar conteúdo profissional a partir de projetos reais.
+        </p>
+        
+        <div class="flex flex-wrap items-center gap-4">
+            <a href="/generate" class="btn btn-primary px-8 py-3.5 text-sm rounded-xl">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                GERAR NOVA SEMANA
+            </a>
+            
+            <!-- Mini indicadores (Tech style) -->
+            <div class="flex items-center gap-4 ml-4 hidden sm:flex">
+                <div class="px-3 py-1.5 border-l border-brandBorder/50">
+                    <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest">Queue</p>
+                    <p class="text-sm font-bold text-white">{{ metrics.pending_items }} <span class="text-xs font-normal text-brandMuted">itens</span></p>
+                </div>
+                <div class="px-3 py-1.5 border-l border-brandBorder/50">
+                    <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest">Target</p>
+                    <p class="text-sm font-bold text-brandAccent">{{ metrics.total_projects }} <span class="text-xs font-normal text-brandMuted">marcas</span></p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- Sugestão de Ação -->
 {% if metrics.pending_items > 0 %}
-<div class="mb-8 p-4 rounded-lg bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
-    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    <div>
-        <h3 class="text-sm font-semibold text-blue-200">Próxima ação sugerida</h3>
-        <p class="text-sm text-blue-300/80 mt-1">Revisar e publicar as {{ metrics.pending_items }} peças pendentes listadas na fila de publicação.</p>
-    </div>
-</div>
-{% elif metrics.total_projects > 0 %}
-<div class="mb-8 p-4 rounded-lg bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
-    <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-    <div>
-        <h3 class="text-sm font-semibold text-blue-200">Próxima ação sugerida</h3>
-        <p class="text-sm text-blue-300/80 mt-1">Sua fila está vazia! Considere gerar uma nova semana de conteúdo.</p>
+<div class="mb-12 p-1 rounded-xl bg-gradient-to-r from-brandAccentPurple/30 via-brandAccent/20 to-transparent p-[1px]">
+    <div class="bg-brandSidebar/90 backdrop-blur-md rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-[0_0_30px_rgba(139,92,246,0.1)]">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-brandAccentPurple/10 border border-brandAccentPurple/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white font-mono tracking-tight">AÇÃO NECESSÁRIA</h3>
+                <p class="text-sm text-brandSecondary mt-0.5">Há <strong>{{ metrics.pending_items }} peças</strong> aguardando revisão no pipeline.</p>
+            </div>
+        </div>
+        <a href="#pipeline" class="btn btn-ghost border-brandAccentPurple/30 text-brandAccentPurple hover:bg-brandAccentPurple/10 px-6 py-2.5 whitespace-nowrap">ACESSAR FILA</a>
     </div>
 </div>
 {% endif %}
 
-<!-- Metrics Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
-    <div class="card p-5">
-        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Peças Geradas</h3>
-        <p class="mt-2 text-2xl font-bold text-white">{{ metrics.total_items }}</p>
+<!-- Metrics Cards Cockpit -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
+    
+    <div class="cockpit-card metric-card metric-blue py-8 px-6 group">
+        <svg class="metric-icon-bg text-brandAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <h3 class="text-xs font-mono font-bold text-brandMuted uppercase tracking-widest mb-4 z-10">PEÇAS GERADAS</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.total_items }}</p>
+        </div>
+        <p class="text-sm text-brandSecondary/90 mt-3 z-10 font-medium">Unidades editoriais</p>
     </div>
     
-    <div class="card p-5 border-yellow-500/20">
-        <h3 class="text-xs font-semibold text-yellow-500/80 uppercase tracking-wider">Prontas para Publicar</h3>
-        <p class="mt-2 text-2xl font-bold text-yellow-400">{{ metrics.ready_items }}</p>
+    <div class="cockpit-card metric-card metric-amber py-8 px-6 group">
+        <svg class="metric-icon-bg text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        <h3 class="text-xs font-mono font-bold text-yellow-500/80 uppercase tracking-widest mb-4 z-10">PRONTAS PARA PUBLICAR</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.ready_items }}</p>
+        </div>
+        <p class="text-sm text-yellow-500/70 mt-3 z-10 font-medium">Aguardando publicação</p>
     </div>
 
-    <div class="card p-5 border-green-500/20">
-        <h3 class="text-xs font-semibold text-green-500/80 uppercase tracking-wider">Publicadas</h3>
-        <p class="mt-2 text-2xl font-bold text-green-400">{{ metrics.published_items }}</p>
+    <div class="cockpit-card metric-card metric-green py-8 px-6 group">
+        <svg class="metric-icon-bg text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <h3 class="text-xs font-mono font-bold text-green-500/80 uppercase tracking-widest mb-4 z-10">PUBLICADAS</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.published_items }}</p>
+        </div>
+        <p class="text-sm text-green-500/70 mt-3 z-10 font-medium">Distribuição confirmada</p>
     </div>
 
-    <div class="card p-5">
-        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Pendentes</h3>
-        <p class="mt-2 text-2xl font-bold text-white">{{ metrics.pending_items }}</p>
-        <p class="text-[10px] text-vercelMuted mt-1 tracking-wide">{{ metrics.pending_items }} peças aguardando revisão</p>
+    <div class="cockpit-card metric-card metric-red py-8 px-6 group">
+        <svg class="metric-icon-bg text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <h3 class="text-xs font-mono font-bold text-red-400/80 uppercase tracking-widest mb-4 z-10">PENDENTES</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.pending_items }}</p>
+        </div>
+        <p class="text-sm text-red-400/70 mt-3 z-10 font-medium">Aguardando revisão</p>
     </div>
 
-    <div class="card p-5">
-        <h3 class="text-xs font-semibold text-vercelMuted uppercase tracking-wider">Projetos Ativos</h3>
-        <p class="mt-2 text-2xl font-bold text-vercelAccent">{{ metrics.total_projects }}</p>
+    <div class="cockpit-card metric-card metric-purple py-8 px-6 group">
+        <svg class="metric-icon-bg text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <h3 class="text-[10px] font-mono font-bold text-brandAccentPurple/80 uppercase tracking-widest mb-4 z-10">PROJETOS ATIVOS</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-4xl lg:text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.total_projects }}</p>
+        </div>
+        <p class="text-xs text-brandAccentPurple/70 mt-3 z-10 font-medium">Projetos iniciados</p>
+    </div>
+
+    <div class="cockpit-card metric-card metric-cyan py-8 px-6 group border-brandAccentCyan/20 hover:border-brandAccentCyan/50">
+        <svg class="metric-icon-bg text-brandAccentCyan opacity-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <h3 class="text-[10px] font-mono font-bold text-brandAccentCyan/80 uppercase tracking-widest mb-4 z-10">ASSETS VINCULADOS</h3>
+        <div class="flex items-baseline gap-2 z-10">
+            <p class="text-4xl lg:text-5xl font-black text-white tracking-tighter drop-shadow-md">{{ metrics.linked_assets_items }}</p>
+        </div>
+        <p class="text-xs text-brandAccentCyan/70 mt-3 z-10 font-medium">Mídia / Anexos</p>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:items-start" id="pipeline">
     
-    <!-- Fila de Publicação -->
-    <div>
-        <h2 class="text-lg font-semibold text-white mb-4">Fila de Publicação</h2>
-        <div class="card overflow-hidden">
+    <!-- Editorial Pipeline -->
+    <div class="lg:col-span-7 flex flex-col">
+        <div class="flex items-center justify-between mb-6 border-b border-brandBorder/50 pb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white tracking-tight">Pipeline Editorial</h2>
+                <p class="text-xs font-mono text-brandMuted mt-1">Fila editorial</p>
+            </div>
+            {% if metrics.queue %}
+            <span class="badge bg-brandAccentPurple/10 text-brandAccentPurple border border-brandAccentPurple/30 font-mono">{{ metrics.queue|length }} TASKS</span>
+            {% endif %}
+        </div>
+        
+        <div class="cockpit-card flex-1 flex flex-col p-6">
             {% if not metrics.queue %}
-            <div class="p-6 text-center text-vercelMuted text-sm">Nenhum item na fila.</div>
+            <div class="text-center flex flex-col items-center justify-center flex-1 h-64">
+                <div class="w-16 h-16 rounded-full border border-dashed border-brandBorder flex items-center justify-center mb-4">
+                    <svg class="w-6 h-6 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <p class="text-base text-brandMuted font-mono uppercase tracking-widest">Pipeline Vazio</p>
+            </div>
             {% else %}
-            <div class="divide-y divide-vercelBorder">
+            <div class="flex-1 mt-2">
                 {% for q in metrics.queue %}
-                <a href="/publications/{{ q.folder_id }}/item/{{ q.item_id }}" class="p-4 flex items-center justify-between hover:bg-white/5 transition-colors block">
-                    <div>
-                        <p class="text-sm font-medium text-white">{{ q.title }}</p>
-                        <p class="text-xs text-vercelMuted mt-0.5">{{ q.project }}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="badge badge-{{ q.status }}">{{ q.status | translate_status }}</span>
-                        <svg class="w-4 h-4 text-vercelMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </div>
-                </a>
+                <div class="pipeline-item mb-6">
+                    <div class="pipeline-marker"></div>
+                    <a href="/publications/{{ q.folder_id }}/item/{{ q.item_id }}" class="block p-4 rounded-xl border border-brandBorder/50 bg-brandBg/50 hover:bg-brandBorder/10 hover:border-brandBorder active:scale-[0.99] transition-all duration-200 ease-out group">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="text-xs font-mono font-bold text-brandAccent bg-brandAccent/10 px-2.5 py-1 rounded border border-brandAccent/20 uppercase">{{ q.project }}</span>
+                                    <span class="text-xs font-mono text-brandMuted">LinkedIn &middot; {{ q.item_id.split('-')[-1] | title }}</span>
+                                </div>
+                                <p class="text-base font-semibold text-white group-hover:text-brandAccentCyan transition-colors">{{ q.title }}</p>
+                            </div>
+                            <div class="flex items-center gap-4 sm:flex-col sm:items-end">
+                                <span class="badge badge-{{ q.status }}">{{ q.status | translate_status }}</span>
+                                <div class="flex items-center text-xs font-mono font-bold text-brandMuted group-hover:text-brandAccentCyan transition-colors">
+                                    ABRIR <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
                 {% endfor %}
             </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Última Atividade -->
-    <div>
-        <h2 class="text-lg font-semibold text-white mb-4">Última Atividade</h2>
-        <div class="card overflow-hidden">
+    <!-- Activity Console -->
+    <div class="lg:col-span-5 flex flex-col">
+        <div class="flex items-center justify-between mb-6 border-b border-brandBorder/50 pb-4">
+            <div>
+                <h2 class="text-xl font-bold text-white tracking-tight">Log de Atividade</h2>
+                <p class="text-xs font-mono text-brandMuted mt-1">Eventos recentes</p>
+            </div>
+            <div class="ai-pulse-dot"></div>
+        </div>
+        
+        <div class="cockpit-card flex-1 flex flex-col overflow-hidden bg-[#020205] border-t-4 border-t-brandBorder/50">
+            <!-- Mac style dots -->
+            <div class="px-4 py-3 border-b border-brandBorder/30 flex items-center gap-2 bg-[#05050A]">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-green-500/80"></div>
+                <span class="ml-2 text-[10px] font-mono text-brandMuted">brandos ~ histórico</span>
+            </div>
+            
             {% if not metrics.recent_activity %}
-            <div class="p-6 text-center text-vercelMuted text-sm">Nenhuma atividade recente registrada.</div>
-            {% else %}
-            <div class="divide-y divide-vercelBorder">
-                {% for act in metrics.recent_activity %}
-                <div class="p-4 flex items-start gap-4 hover:bg-white/5 transition-colors">
-                    <div class="mt-1">
-                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <div class="p-4 flex-1 overflow-y-auto console-log opacity-70">
+                <div class="console-line px-2 py-1.5 mb-1 flex items-start gap-3">
+                    <span class="text-green-400/80 flex-shrink-0 mt-0.5">❯</span>
+                    <div class="flex-1">
+                        <p class="text-[13px] text-brandText leading-tight">Registry carregado</p>
                     </div>
-                    <div>
-                        <p class="text-sm font-medium text-white">{{ act.action }}</p>
-                        <p class="text-xs text-vercelMuted mt-0.5">
-                            {{ act.project }} 
+                </div>
+                <div class="console-line px-2 py-1.5 mb-1 flex items-start gap-3">
+                    <span class="text-green-400/80 flex-shrink-0 mt-0.5">❯</span>
+                    <div class="flex-1">
+                        <p class="text-[13px] text-brandText leading-tight">Última publicação identificada</p>
+                    </div>
+                </div>
+                <div class="console-line px-2 py-1.5 mb-1 flex items-start gap-3">
+                    <span class="text-green-400/80 flex-shrink-0 mt-0.5">❯</span>
+                    <div class="flex-1">
+                        <p class="text-[13px] text-brandText leading-tight">{{ metrics.pending_items }} peças aguardando revisão</p>
+                    </div>
+                </div>
+                <div class="console-line px-2 py-1.5 flex items-start gap-3 opacity-50">
+                    <span class="text-green-400/80">❯</span>
+                    <span class="text-xs text-brandMuted animate-pulse">_</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-4 flex-1 overflow-y-auto console-log">
+                {% for act in metrics.recent_activity %}
+                <div class="console-line px-2 py-1.5 mb-1 flex items-start gap-3">
+                    <span class="text-green-400/80 flex-shrink-0 mt-0.5">❯</span>
+                    <div class="flex-1">
+                        <div class="flex items-baseline gap-2 mb-0.5">
+                            <span class="text-[11px] text-brandSecondary/90 font-bold uppercase">{{ act.project }}</span>
                             {% if act.time %}
                                 {% set t_parts = act.time.split('T') %}
-                                &middot; {{ t_parts[0] }} 
-                                {% if t_parts|length > 1 %} &middot; {{ t_parts[1][:5] }} {% endif %}
+                                <span class="text-[10px] text-brandMuted/70">[{{ t_parts[0] }}{% if t_parts|length > 1 %} {{ t_parts[1][:5] }}{% endif %}]</span>
                             {% endif %}
-                        </p>
+                        </div>
+                        <p class="text-[13px] text-brandText leading-tight">{{ act.action }}</p>
                     </div>
                 </div>
                 {% endfor %}
+                <div class="console-line px-2 py-1.5 flex items-start gap-3 opacity-50">
+                    <span class="text-green-400/80">❯</span>
+                    <span class="text-xs text-brandMuted animate-pulse">_</span>
+                </div>
             </div>
             {% endif %}
         </div>

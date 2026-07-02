@@ -1,239 +1,319 @@
 {% extends "base.html" %}
 
-{% block title %}Detalhe: {{ item.title }} | BrandOS Console{% endblock %}
+{% block title %}Asset: {{ item.title }} | BrandOS Command Center{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <div class="flex items-center gap-4 mb-4">
-        <a href="/publications" class="text-vercelAccent text-sm hover:text-blue-400 inline-flex items-center gap-1 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Voltar para publicações
-        </a>
-        <span class="text-vercelBorder">|</span>
-        <a href="/publications/{{ folder_id }}" class="text-vercelAccent text-sm hover:text-blue-400 inline-flex items-center gap-1 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Voltar para a semana
-        </a>
-    </div>
-    
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-white">{{ item.title }}</h1>
-            <p class="text-vercelMuted mt-1">Projeto: {{ week_details.project }} &middot; Arquivo: <span class="font-mono text-xs">{{ item.file }}</span></p>
+<!-- Hero Command Center for Item Detail -->
+<div class="mb-8 hero-panel rounded-2xl p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div class="abstract-orbit w-[300px] h-[300px] -right-[50px] -top-[100px] pointer-events-none opacity-20"></div>
+    <div class="relative z-10 w-full flex flex-col gap-4">
+        <div class="flex items-center gap-3 text-xs font-mono tracking-widest uppercase">
+            <a href="/publications" class="text-brandMuted hover:text-brandAccentCyan transition-colors inline-flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Registry
+            </a>
+            <span class="text-brandBorderActive">/</span>
+            <a href="/publications/{{ folder_id }}" class="text-brandMuted hover:text-brandAccentCyan transition-colors">
+                Semana {{ week_details.date }}
+            </a>
+            <span class="text-brandBorderActive">/</span>
+            <span class="text-brandAccentPurple">{{ item.type }}</span>
         </div>
-        <div>
-            <span class="badge badge-{{ item.status }} text-sm px-3 py-1">{{ item.status | translate_status }}</span>
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mt-2">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">{{ item.title }}</h1>
+                <div class="flex items-center gap-3">
+                    <span class="badge bg-brandAccent/10 text-brandAccent border border-brandAccent/30">{{ week_details.project }}</span>
+                    <span class="text-brandMuted font-mono text-xs">{{ item.file }}</span>
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+                <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono">STATUS DO ATIVO</span>
+                <span class="badge badge-{{ item.status }} px-4 py-2 shadow-lg shadow-white/5">{{ item.status | translate_status }}</span>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Tabs Navigation -->
-<div class="mb-6 flex border-b border-vercelBorder overflow-x-auto no-scrollbar">
-    <button onclick="switchTab('conteudo')" class="tab-btn active px-4 py-3 border-b-2 border-vercelAccent text-white font-medium text-sm whitespace-nowrap transition-colors">Conteúdo</button>
-    <button onclick="switchTab('assets')" class="tab-btn px-4 py-3 border-b-2 border-transparent text-vercelMuted hover:text-white font-medium text-sm whitespace-nowrap transition-colors">Assets</button>
-    <button onclick="switchTab('publicacao')" class="tab-btn px-4 py-3 border-b-2 border-transparent text-vercelMuted hover:text-white font-medium text-sm whitespace-nowrap transition-colors">Publicação</button>
-    <button onclick="switchTab('metricas')" class="tab-btn px-4 py-3 border-b-2 border-transparent text-vercelMuted hover:text-white font-medium text-sm whitespace-nowrap transition-colors">Métricas</button>
+<div class="mb-8 flex overflow-x-auto no-scrollbar gap-2">
+    <button onclick="switchTab('conteudo')" class="tab-btn active px-5 py-2.5 rounded-t-lg bg-brandAccentPurple/10 border-b-2 border-brandAccentPurple text-white font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+        RAW DATA
+    </button>
+    <button onclick="switchTab('assets')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        ASSETS VISUAIS
+    </button>
+    <button onclick="switchTab('publicacao')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+        PUBLICAÇÃO
+    </button>
+    <button onclick="switchTab('metricas')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+        TELEMETRIA
+    </button>
 </div>
 
 <!-- TAB: CONTEUDO -->
 <div id="tab-conteudo" class="tab-content block">
-    <div class="card p-4 mb-6 bg-white/5 border-vercelBorder flex flex-wrap gap-3 items-center">
-        <span class="text-sm text-vercelMuted font-medium mr-2">Ações Rápidas:</span>
+    <div class="cockpit-card p-4 mb-6 flex flex-wrap gap-3 items-center">
+        <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mr-2">Painel de Ações:</span>
         
         <!-- Copiar -->
         <div id="raw-content" class="hidden">{{ item.content }}</div>
         {% if item.file_exists %}
-        <button onclick="copyToClipboard('raw-content')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-vercelAccent hover:bg-blue-500 rounded transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            Copiar Texto
+        <button onclick="copyToClipboard('raw-content')" class="btn btn-ghost border-brandBorder/30 text-brandMuted hover:text-white hover:border-white/30 px-4 py-2">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            COPIAR PAYLOAD
         </button>
         {% else %}
-        <button disabled class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-vercelMuted bg-white/5 opacity-50 rounded cursor-not-allowed">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            Copiar (Arquivo ausente)
+    <button class="btn btn-ghost border-brandBorder/30 text-brandMuted px-4 py-2 opacity-50 cursor-not-allowed" disabled>
+            ARQUIVO NÃO ENCONTRADO
         </button>
         {% endif %}
-
-        {% if item.file_exists %}
-        <!-- Pronto -->
-        {% if item.status != 'ready_to_publish' and item.status != 'published' %}
-        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=ready_to_publish" method="POST" class="inline">
-            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-yellow-400 bg-yellow-500/10 hover:bg-yellow-500/20 rounded transition-colors">
-                Marcar Pronto
-            </button>
-        </form>
-        {% endif %}
-
-        <!-- Revisar -->
-        {% if item.status != 'needs_revision' and item.status != 'published' %}
-        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=needs_revision" method="POST" class="inline">
-            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded transition-colors">
-                Precisa Revisar
-            </button>
-        </form>
-        {% endif %}
-
-        <!-- Publicar -->
-        {% if item.status != 'published' %}
-        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=published" method="POST" class="inline">
-            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-green-400 bg-green-500/10 hover:bg-green-500/20 rounded transition-colors">
-                Marcar Publicado
-            </button>
-        </form>
-        {% endif %}
-        {% endif %} <!-- End of item.file_exists condition -->
-
-        <!-- Ignorar -->
-        {% if item.status != 'skipped' %}
-        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=skipped" method="POST" class="inline">
-            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-vercelMuted bg-white/5 hover:bg-white/10 rounded transition-colors">
-                Ignorar
-            </button>
-        </form>
-        {% endif %}
-    </div>
-
-    <!-- Conteúdo da Peça -->
-    <div class="card overflow-hidden">
-        <div class="bg-black/40 p-4 border-b border-vercelBorder">
-            <h3 class="text-sm font-semibold text-white">Conteúdo do Arquivo</h3>
-        </div>
-        <div class="p-6 overflow-y-auto max-h-[70vh]">
-            {% if item.content == "Arquivo não encontrado no disco." %}
-            <p class="text-red-400 font-mono text-sm">{{ item.content }}</p>
-            {% else %}
-            <pre class="text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">{{ item.content }}</pre>
-            {% endif %}
-        </div>
-    </div>
+</div>
 </div>
 
 <!-- TAB: ASSETS -->
 <div id="tab-assets" class="tab-content hidden">
     {% if not item.manifest %}
-    <div class="card p-10 text-center border-dashed border-vercelBorder">
-        <svg class="w-12 h-12 text-vercelMuted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        <h3 class="text-lg font-medium text-white mb-2">Pasta de Assets Não Inicializada</h3>
-        <p class="text-vercelMuted mb-6 text-sm max-w-md mx-auto">Esta peça ainda não possui uma pasta dedicada para salvar imagens, PDFs e prompts visuais.</p>
+    <div class="cockpit-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
+        <div class="w-16 h-16 rounded-full border border-brandBorder flex items-center justify-center mb-6 shadow-inner">
+            <svg class="w-6 h-6 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Asset Manager Inativo</h3>
+        <p class="text-brandSecondary mb-8 text-sm max-w-md mx-auto">Não há um namespace alocado para recursos visuais desta peça.</p>
         <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/init" method="POST">
-            <button type="submit" class="bg-vercelAccent hover:bg-blue-500 text-white px-5 py-2.5 rounded font-medium text-sm transition-colors shadow-lg shadow-blue-500/20">
-                Criar Pasta de Assets
+            <button type="submit" class="btn btn-primary px-8 py-3.5 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
+                INICIALIZAR STORAGE VISUAL
             </button>
         </form>
     </div>
     {% else %}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Esquerda: Painel de Upload -->
-        <div class="lg:col-span-1 space-y-4">
-            <div class="card p-5">
-                <h3 class="text-sm font-semibold text-white mb-4">Adicionar Arquivo</h3>
-                <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+        <div class="lg:col-span-1 space-y-6">
+            <div class="cockpit-card p-6 relative overflow-hidden group">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-brandAccent/5 rounded-full -z-10 transition-transform duration-500"></div>
+                
+                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">Upload Engine</h3>
+                <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/upload" method="POST" enctype="multipart/form-data" class="space-y-5">
                     <div>
-                        <label class="block text-xs font-medium text-vercelMuted mb-1.5">Categoria</label>
-                        <select name="asset_category" class="w-full bg-black border border-vercelBorder rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-vercelAccent transition-colors">
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Data Type</label>
+                        <select name="asset_category" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
                             <option value="images">Imagem</option>
-                            <option value="slides">Slide</option>
-                            <option value="pdf">PDF Final</option>
-                            <option value="video">Vídeo</option>
-                            <option value="source">Arquivo Fonte</option>
+                            <option value="pdf">PDF / Carrossel</option>
+                            <option value="video">Vídeos</option>
+                            <option value="source">Fontes / Templates</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-vercelMuted mb-1.5">Função (opcional)</label>
-                        <input type="text" name="asset_role" placeholder="ex: cover, slide_image, pdf_final" class="w-full bg-black border border-vercelBorder rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-vercelAccent transition-colors placeholder:text-gray-600">
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Role (Opcional)</label>
+                        <input type="text" name="asset_role" placeholder="ex: cover, slide_1, final" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors placeholder:text-brandMuted/30">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-vercelMuted mb-1.5">Arquivo Físico</label>
-                        <input type="file" name="file" required class="w-full text-xs text-vercelMuted file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition-colors cursor-pointer border border-vercelBorder border-dashed p-1 rounded">
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Payload (File)</label>
+                        <div class="relative group/file">
+                            <input type="file" name="files" multiple required class="w-full text-xs text-brandMuted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-mono file:font-bold file:bg-brandAccent/20 file:text-brandAccent hover:file:bg-brandAccent/30 transition-colors cursor-pointer border border-dashed border-brandBorder/80 group-hover/file:border-brandAccent/50 p-2 rounded-lg bg-[#020205]">
+                        </div>
                     </div>
-                    <button type="submit" class="w-full bg-vercelAccent hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-medium transition-colors">Fazer Upload</button>
+                    <button type="submit" class="btn btn-primary w-full shadow-md py-3 mt-2">EXECUTAR UPLOAD</button>
                 </form>
             </div>
             
-            <div class="card p-5">
-                <h3 class="text-sm font-semibold text-white mb-4">Adicionar Prompt Visual</h3>
-                <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/prompt" method="POST" class="space-y-4">
+            <div class="cockpit-card p-6">
+                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">AI Prompts Visuais</h3>
+                <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/prompt" method="POST" class="space-y-5">
                     <div>
-                        <textarea name="prompt_text" required rows="3" placeholder="Insira o prompt do Midjourney ou instruções visuais..." class="w-full bg-black border border-vercelBorder rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-vercelAccent resize-none transition-colors placeholder:text-gray-600"></textarea>
+                        <textarea name="prompt_text" required rows="4" placeholder="Input Midjourney prompt here..." class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-brandSecondary focus:outline-none focus:border-brandAccentPurple resize-none transition-colors placeholder:text-brandMuted/30 font-mono"></textarea>
                     </div>
-                    <button type="submit" class="w-full bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded text-sm font-medium transition-colors border border-vercelBorder">Salvar Prompt</button>
+                    <button type="submit" class="btn btn-ghost w-full border-brandAccentPurple/30 text-brandAccentPurple hover:bg-brandAccentPurple/10">SALVAR PROMPT</button>
                 </form>
             </div>
         </div>
         
         <!-- Direita: Lista de Arquivos -->
-        <div class="lg:col-span-2 space-y-6">
-            {% set has_files = false %}
+        <div class="lg:col-span-2 space-y-8">
+            {% set ns = namespace(has_files=false) %}
             
             {% for category, files in item.manifest.files.items() %}
                 {% if category != 'prompts' and files %}
-                {% set has_files = true %}
-                <div class="card overflow-hidden">
-                    <div class="bg-black/40 p-3 border-b border-vercelBorder flex justify-between items-center">
-                        <h4 class="text-sm font-semibold text-white capitalize flex items-center gap-2">
+                {% set ns.has_files = true %}
+                
+                {% set display_category = category %}
+                {% if category == 'pdf' %}{% set display_category = 'PDF / Carrossel' %}{% endif %}
+                {% if category == 'images' %}{% set display_category = 'Imagens' %}{% endif %}
+                {% if category == 'video' %}{% set display_category = 'Vídeos' %}{% endif %}
+                {% if category == 'source' %}{% set display_category = 'Fontes / Templates' %}{% endif %}
+                {% if category == 'slides' %}{% set display_category = 'Slides' %}{% endif %}
+
+                <div class="cockpit-card overflow-hidden border-t-2 border-brandBorder hover:border-brandAccent/30 transition-colors">
+                    <div class="bg-brandBg/50 p-4 border-b border-brandBorder/30 flex justify-between items-center">
+                        <h4 class="text-xs font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2">
                             {% if category == 'pdf' %}
-                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                             {% elif category in ['images', 'slides'] %}
-                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             {% else %}
-                            <svg class="w-4 h-4 text-vercelMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                            <svg class="w-4 h-4 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 01-2 2z"></path></svg>
                             {% endif %}
-                            {{ category }}
+                            {{ display_category | upper }}
                         </h4>
-                        <span class="text-xs font-medium text-vercelMuted bg-white/5 px-2 py-0.5 rounded">{{ files|length }}</span>
+                        <span class="badge bg-brandCard border border-brandBorder text-brandMuted">{{ files|length }}</span>
                     </div>
-                    <ul class="divide-y divide-vercelBorder">
-                        {% for f in files %}
-                        <li class="p-3 flex justify-between items-center hover:bg-white/5 transition-colors group">
-                            <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="truncate">
-                                    <p class="text-sm font-medium text-white truncate">{{ f.file_name }}</p>
-                                    <p class="text-[10px] font-mono text-vercelMuted mt-0.5 truncate">
-                                        {{ f.uploaded_at[:16].replace('T', ' ') }}
-                                        {% if f.asset_role %}&middot; <span class="text-blue-400">{{ f.asset_role }}</span>{% endif %}
-                                    </p>
+                    
+                    {% if category == 'pdf' %}
+                        <div class="p-6 space-y-8">
+                            {% for f in files %}
+                            {% set local_url = '/assets/' ~ folder_id ~ '/' ~ item.id ~ '/' ~ category ~ '/' ~ f.file_name %}
+                            
+                            <!-- Header Card -->
+                            <div class="border border-brandBorder/50 rounded-xl p-5 bg-[#020205] hover:border-brandAccentCyan/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                                        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h5 class="text-white font-bold text-sm">{{ f.file_name }}</h5>
+                                            <span class="badge badge-published px-2 py-0.5 shadow-none text-[9px]">PDF Final</span>
+                                        </div>
+                                        <p class="text-brandMuted text-xs mb-1">Tipo: PDF • Publicado em: {{ item.published_at | default('N/A') }}</p>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] font-mono text-brandMuted">UP: {{ f.uploaded_at[:16].replace('T', ' ') }}</span>
+                                            <span class="text-[10px] font-mono text-brandAccentCyan">STATUS: ANEXADO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="copyToClipboardText('{{ local_url }}')" class="btn btn-ghost hover:text-white px-3 py-1.5 text-[10px]">COPIAR CAMINHO</button>
+                                    <a href="{{ local_url }}" download class="btn btn-ghost hover:text-white hover:border-white px-3 py-1.5 text-[10px]">BAIXAR</a>
+                                    <a href="{{ local_url }}" target="_blank" class="btn btn-primary px-4 py-1.5 text-[10px]">ABRIR EM NOVA ABA</a>
+                                    <button onclick="confirmDeleteAsset('{{ category }}', '{{ f.file_name }}')" class="btn btn-ghost hover:bg-status-red/20 hover:text-status-red hover:border-status-red/50 text-[10px] px-3 py-1.5 ml-2">EXCLUIR</button>
                                 </div>
                             </div>
-                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="copyToClipboardText('{{ f.path }}')" class="text-xs text-white hover:text-blue-300 bg-white/10 hover:bg-blue-500/20 px-2 py-1.5 rounded transition-colors flex items-center gap-1" title="Copiar Caminho">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                                    Copiar Caminho
-                                </button>
+                            
+                            <!-- PDF Iframe Preview -->
+                            <div class="mt-4 border border-brandBorder/50 rounded-xl overflow-hidden bg-[#020205] shadow-lg" id="pdf-preview-container-{{ loop.index }}">
+                                <div class="bg-brandBorder/20 px-4 py-3 border-b border-brandBorder/50 flex justify-between items-center cursor-pointer hover:bg-brandBorder/30 transition-colors" onclick="togglePdfPreview('{{ loop.index }}', '{{ folder_id }}', '{{ item.id }}', '{{ f.file_name }}')">
+                                    <h5 class="text-xs font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-brandAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        Preview do Carrossel
+                                    </h5>
+                                    <button type="button" class="text-[10px] font-mono text-brandMuted hover:text-white flex items-center gap-1" id="btn-toggle-pdf-{{ loop.index }}">
+                                        MINIMIZAR PREVIEW
+                                        <svg class="w-3 h-3 transform transition-transform" id="icon-toggle-pdf-{{ loop.index }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </button>
+                                </div>
+                                <div class="relative w-full transition-all duration-300" style="height: 750px;" id="pdf-iframe-wrapper-{{ loop.index }}">
+                                    <iframe src="{{ local_url }}" class="w-full h-full border-0" title="Preview do PDF">
+                                        <p class="text-center text-brandMuted p-10">Não foi possível exibir o PDF aqui. <a href="{{ local_url }}" target="_blank" class="text-brandAccentCyan hover:underline">Abrir em nova aba</a>.</p>
+                                    </iframe>
+                                </div>
                             </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                            
+                            {% endfor %}
+                        </div>
+                        
+                    {% elif category == 'images' %}
+                        <div class="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {% for f in files %}
+                            {% set local_url = '/assets/' ~ folder_id ~ '/' ~ item.id ~ '/' ~ category ~ '/' ~ f.file_name %}
+                            <div class="border border-brandBorder/50 rounded-lg overflow-hidden bg-[#020205] group/img hover:border-brandAccent/50 transition-colors flex flex-col">
+                                <div class="aspect-square bg-brandBg/80 border-b border-brandBorder/30 relative flex items-center justify-center cursor-pointer" onclick="openLightbox('{{ local_url }}', '{{ f.file_name }}', '{{ category }}')">
+                                    <img src="{{ local_url }}" class="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" onerror="this.src='/static/placeholder.png'; this.onerror=null;" alt="{{ f.file_name }}">
+                                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm pointer-events-none">
+                                        <span class="text-[10px] font-mono font-bold text-white uppercase tracking-widest px-3 py-1 bg-black/80 rounded border border-white/20">Ampliar</span>
+                                    </div>
+                                </div>
+                                <div class="p-3 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <p class="text-[10px] font-semibold text-white truncate mb-1" title="{{ f.file_name }}">{{ f.file_name }}</p>
+                                        <p class="text-[9px] font-mono text-brandMuted">{{ f.uploaded_at[:10] }}</p>
+                                    </div>
+                                    <div class="flex gap-1 mt-3">
+                                        <button onclick="copyToClipboardText('{{ local_url }}')" class="flex-1 bg-brandBorder/20 hover:bg-brandBorder/50 text-white text-[9px] font-mono tracking-widest py-1.5 rounded transition-colors" title="Copiar Caminho">COPY</button>
+                                        <button onclick="confirmDeleteAsset('{{ category }}', '{{ f.file_name }}')" class="flex-1 bg-status-red/10 hover:bg-status-red/30 text-status-red hover:text-white border border-status-red/20 text-[9px] font-mono tracking-widest py-1.5 rounded transition-colors" title="Excluir Imagem">EXCLUIR</button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                    {% else %}
+                        <ul class="divide-y divide-brandBorder/20">
+                            {% for f in files %}
+                            {% set local_url = '/assets/' ~ folder_id ~ '/' ~ item.id ~ '/' ~ category ~ '/' ~ f.file_name %}
+                            <li class="p-4 flex justify-between items-center hover:bg-brandBorder/5 transition-colors group">
+                                <div class="flex items-center gap-4 overflow-hidden">
+                                    <div class="truncate">
+                                        <p class="text-sm font-semibold text-white truncate group-hover:text-brandAccentCyan transition-colors">{{ f.file_name }}</p>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-[10px] font-mono text-brandMuted">{{ f.uploaded_at[:16].replace('T', ' ') }}</span>
+                                            {% if f.asset_role %}
+                                            <span class="w-1 h-1 rounded-full bg-brandBorder"></span>
+                                            <span class="text-[10px] font-mono text-brandAccent">{{ f.asset_role }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="copyToClipboardText('{{ local_url }}')" class="btn btn-ghost hover:text-brandAccentCyan hover:border-brandAccentCyan/30 text-[9px] px-2.5 py-1.5" title="Copiar Caminho">
+                                        COPY_PATH
+                                    </button>
+                                    <button onclick="confirmDeleteAsset('{{ category }}', '{{ f.file_name }}')" class="btn btn-ghost hover:bg-status-red/20 hover:text-status-red hover:border-status-red/50 text-[9px] px-2.5 py-1.5" title="Excluir Arquivo">
+                                        EXCLUIR
+                                    </button>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
                 {% endif %}
             {% endfor %}
             
             {% if item.manifest.files.prompts %}
-            {% set has_files = true %}
-            <div class="card overflow-hidden">
-                <div class="bg-black/40 p-3 border-b border-vercelBorder flex justify-between items-center">
-                    <h4 class="text-sm font-semibold text-white flex items-center gap-2">
-                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        Prompts Visuais
+            {% set ns.has_files = true %}
+            <div class="cockpit-card overflow-hidden border-t-2 border-brandAccentPurple/50">
+                <div class="bg-brandBg/50 p-4 border-b border-brandBorder/30 flex justify-between items-center">
+                    <h4 class="text-xs font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                        <svg class="w-4 h-4 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                        AI_PROMPTS
                     </h4>
-                    <span class="text-xs font-medium text-vercelMuted bg-white/5 px-2 py-0.5 rounded">{{ item.manifest.files.prompts|length }}</span>
+                    <span class="badge bg-brandCard border border-brandBorder text-brandMuted">{{ item.manifest.files.prompts|length }}</span>
                 </div>
-                <div class="p-4 space-y-3">
+                <div class="p-5 space-y-4">
                     {% for p in item.manifest.files.prompts %}
-                    <div class="bg-white/5 p-3 rounded border border-vercelBorder relative group">
-                        <p class="text-sm text-gray-300 font-sans leading-relaxed pr-8 whitespace-pre-wrap">{{ p.text }}</p>
-                        <p class="text-[10px] font-mono text-vercelMuted mt-2">{{ p.added_at[:16].replace('T', ' ') }}</p>
-                        <button onclick="copyToClipboardText('{{ p.text | replace('\n', '\\n') | replace('\'', '\\\'') }}')" class="absolute top-2 right-2 p-1.5 text-vercelMuted hover:text-white bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Copiar Prompt">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        </button>
+                    <div class="bg-[#020205] p-4 rounded-xl border border-brandBorder/50 relative group">
+                        <p class="text-[13px] text-brandSecondary/90 font-mono leading-relaxed pr-10 whitespace-pre-wrap">{{ p.text if p.text else p.content }}</p>
+                        <p class="text-[9px] font-mono text-brandMuted mt-3 uppercase">Logged at: {{ (p.added_at if p.added_at else p.created_at)[:16].replace('T', ' ') if (p.added_at or p.created_at) else '' }}</p>
+                        <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="copyToClipboardText('{{ (p.text if p.text else p.content) | replace('
+', '\
+') | replace('\'', '\\\'') }}')" class="btn btn-ghost hover:text-brandAccentPurple hover:border-brandAccentPurple/30 text-[9px] px-2 py-1.5" title="Copiar Prompt">
+                                COPY
+                            </button>
+                            <button onclick="confirmDeletePrompt('{{ p.id }}', {{ loop.index0 }})" class="btn btn-ghost hover:bg-status-red/20 hover:text-status-red hover:border-status-red/50 text-[9px] px-2 py-1.5" title="Excluir Prompt">
+                                EXCLUIR
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
 
-            {% if not has_files %}
-            <div class="p-8 text-center border border-dashed border-vercelBorder rounded-lg bg-white/5">
-                <p class="text-sm text-vercelMuted">A pasta de assets está pronta, mas ainda não há arquivos.<br>Use os painéis à esquerda para começar.</p>
+            {% if not ns.has_files %}
+            <div class="p-12 text-center border border-dashed border-brandBorder rounded-2xl bg-brandBg/30 flex flex-col items-center">
+                <svg class="w-10 h-10 text-brandMuted mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                {% if item.assets %}
+                <p class="text-sm font-mono tracking-wide text-brandAccentCyan">ASSET VISUAL REGISTRADO, ARQUIVO AINDA NÃO ANEXADO.</p>
+                {% else %}
+                <p class="text-sm font-mono tracking-wide text-brandMuted">STORAGE ALOCADO. AGUARDANDO DADOS.</p>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -241,32 +321,411 @@
     {% endif %}
 </div>
 
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col backdrop-blur-sm" tabindex="-1">
+        <!-- Top Bar -->
+        <div class="flex justify-between items-center p-4 border-b border-brandBorder/30 bg-[#020205]/50">
+            <div class="flex items-center gap-3">
+                <span id="lightbox-title" class="text-white font-mono text-sm font-bold truncate max-w-md"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="lightbox-btn-copy" class="btn btn-ghost text-[10px] px-3 py-1.5 text-brandMuted hover:text-white">COPIAR CAMINHO</button>
+                <a id="lightbox-btn-download" download class="btn btn-ghost text-[10px] px-3 py-1.5 text-brandMuted hover:text-white">BAIXAR</a>
+                <a id="lightbox-btn-open" target="_blank" class="btn btn-ghost text-[10px] px-3 py-1.5 text-brandMuted hover:text-white">NOVA ABA</a>
+                <button id="lightbox-btn-delete" class="btn btn-ghost text-[10px] px-3 py-1.5 hover:bg-status-red/20 hover:text-status-red hover:border-status-red/50 ml-2 border border-transparent">EXCLUIR</button>
+                <div class="w-px h-6 bg-brandBorder/50 mx-2"></div>
+                <button onclick="closeLightbox()" class="text-brandMuted hover:text-white p-1 rounded hover:bg-white/10 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Image Container -->
+        <div class="flex-1 overflow-hidden relative flex items-center justify-center p-4" onclick="closeLightbox(event)">
+            <img id="lightbox-image" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded-sm" onclick="event.stopPropagation()">
+        </div>
+    </div>
+    
+    <!-- Formulários ocultos para deleção -->
+    <form id="form-delete-asset" action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/delete" method="POST" class="hidden">
+        <input type="hidden" name="category" id="input-delete-category">
+        <input type="hidden" name="filename" id="input-delete-filename">
+    </form>
+    
+    <form id="form-delete-prompt" action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/delete-prompt" method="POST" class="hidden">
+        <input type="hidden" name="prompt_id" id="input-delete-prompt-id">
+        <input type="hidden" name="prompt_index" id="input-delete-prompt-index">
+    </form>
+
 <!-- TAB: PUBLICACAO -->
 <div id="tab-publicacao" class="tab-content hidden">
-    <div class="card p-10 text-center border-dashed border-vercelBorder">
-        <svg class="w-10 h-10 text-vercelMuted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-        <h3 class="text-lg font-medium text-white mb-2">Publicação (Fase 2)</h3>
-        <p class="text-sm text-vercelMuted max-w-md mx-auto">Esta aba controlará a automação de publicação e integração com LinkedIn via API em versões futuras do BrandOS.</p>
+    <div class="cockpit-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
+        <svg class="w-12 h-12 text-brandMuted mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+        <h3 class="text-xl font-bold text-white mb-2">Módulo de Deploy (Fase 2)</h3>
+        <p class="text-sm text-brandSecondary max-w-md mx-auto">Em breve: integração direta via API com as redes sociais.</p>
     </div>
 </div>
 
 <!-- TAB: METRICAS -->
-<div id="tab-metricas" class="tab-content hidden">
-    <div class="card p-10 text-center border-dashed border-vercelBorder">
-        <svg class="w-10 h-10 text-vercelMuted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-        <h3 class="text-lg font-medium text-white mb-2">Métricas de Performance (Fase 2)</h3>
-        <p class="text-sm text-vercelMuted max-w-md mx-auto">Impressões, curtidas e engajamento capturados diretamente da plataforma de destino serão exibidos aqui.</p>
+<div id="tab-metricas" class="tab-content hidden space-y-6">
+    {% if item.status == 'used_as_asset' and item.linked_to_item_id %}
+    <div class="cockpit-card p-8 border-l-4 border-brandAccentCyan">
+        <div class="flex items-start gap-4">
+            <svg class="w-6 h-6 text-brandAccentCyan mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <h3 class="text-lg font-bold text-white mb-2">Métricas Vinculadas</h3>
+                <p class="text-brandSecondary mb-4">Este carrossel foi usado como asset visual vinculado ao {{ item.linked_to_item_id }}. As métricas estão registradas na peça publicada.</p>
+                <a href="/publications/{{ folder_id }}/item/{{ item.linked_to_item_id }}" class="btn px-6 py-2 bg-brandAccentCyan/10 text-brandAccentCyan border border-brandAccentCyan/30 hover:bg-brandAccentCyan/20 transition-all rounded-lg text-xs font-bold uppercase tracking-widest">ABRIR {{ item.linked_to_item_id | replace('-', ' ') | upper }}</a>
+            </div>
+        </div>
     </div>
+    {% else %}
+    
+    {% set m = item.metrics.latest if item.metrics and item.metrics.latest else item.metrics %}
+    {% if m and m.total_engagements is defined %}
+    {% set prev_m = item.metrics.snapshots[-2] if item.metrics and item.metrics.snapshots and item.metrics.snapshots|length > 1 else None %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="cockpit-card p-5 border-t-2 border-brandAccentPurple">
+            <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Total Interações</p>
+            <div class="flex items-end gap-2">
+                <p class="text-3xl font-extrabold text-white">{{ m.total_engagements }}</p>
+                {% if prev_m %}
+                    {% set diff = m.total_engagements - prev_m.total_engagements %}
+                    {% if diff > 0 %} <span class="text-status-green text-xs font-bold mb-1">↑ +{{ diff }}</span>
+                    {% elif diff < 0 %} <span class="text-status-red text-xs font-bold mb-1">↓ {{ diff }}</span> {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="cockpit-card p-5 border-t-2 border-brandAccentCyan">
+            <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Engajamento / Impressões</p>
+            <p class="text-3xl font-extrabold text-white">{{ m.engagement_rate_by_impressions }}<span class="text-base text-brandMuted font-normal">%</span></p>
+        </div>
+        <div class="cockpit-card p-5 border-t-2 border-brandAccent">
+            <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Engajamento / Alcance</p>
+            <p class="text-3xl font-extrabold text-white">{{ m.engagement_rate_by_reach }}<span class="text-base text-brandMuted font-normal">%</span></p>
+        </div>
+        <div class="cockpit-card p-5 border-t-2 border-brandBorderActive">
+            <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Visitas / Alcance</p>
+            <div class="flex items-end gap-2">
+                <p class="text-3xl font-extrabold text-white">{{ m.profile_view_rate_by_reach }}<span class="text-base text-brandMuted font-normal">%</span></p>
+                {% if prev_m %}
+                    {% set diff = m.profile_views - prev_m.profile_views %}
+                    {% if diff > 0 %} <span class="text-status-green text-xs font-bold mb-1">↑ +{{ diff }}</span>
+                    {% elif diff < 0 %} <span class="text-status-red text-xs font-bold mb-1">↓ {{ diff }}</span> {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if item.metrics and item.metrics.snapshots %}
+    <div class="cockpit-card p-6 border border-brandBorder/50 mt-6">
+        <h3 class="text-sm font-bold text-brandSecondary mb-4 uppercase tracking-wide">Histórico de Snapshots</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-brandSecondary">
+                <thead class="text-[10px] text-brandMuted uppercase bg-[#020205] border-b border-brandBorder/50">
+                    <tr>
+                        <th class="px-4 py-2">Data</th>
+                        <th class="px-4 py-2">Label</th>
+                        <th class="px-4 py-2">Imp / Alc</th>
+                        <th class="px-4 py-2">Engaj.</th>
+                        <th class="px-4 py-2 text-brandAccentCyan">Taxa (Imp)</th>
+                        <th class="px-4 py-2 text-brandAccent">Taxa (Alc)</th>
+                        <th class="px-4 py-2">Visitas</th>
+                        <th class="px-4 py-2">Notas</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brandBorder/30" id="snapshots-table-body">
+                    {% for snap in item.metrics.snapshots|reverse %}
+                    <tr class="hover:bg-brandBorder/10 transition-colors" data-snap-label="{{ snap.label }}" data-snap-date="{{ snap.captured_at }}">
+                        <td class="px-4 py-3">{{ snap.captured_at }}</td>
+                        <td class="px-4 py-3 font-bold text-white">{{ snap.label }}</td>
+                        <td class="px-4 py-3">{{ snap.impressions }} / {{ snap.reach }}</td>
+                        <td class="px-4 py-3 font-bold text-white">{{ snap.total_engagements }}</td>
+                        <td class="px-4 py-3 font-bold text-brandAccentCyan">{{ snap.engagement_rate_by_impressions }}%</td>
+                        <td class="px-4 py-3 font-bold text-brandAccent">{{ snap.engagement_rate_by_reach }}%</td>
+                        <td class="px-4 py-3">{{ snap.profile_views }}</td>
+                        <td class="px-4 py-3 max-w-[200px] cursor-pointer group" onclick="const d=this.querySelector('div'); d.classList.toggle('truncate'); d.classList.toggle('whitespace-normal');">
+                            <div class="truncate text-brandSecondary group-hover:text-white transition-colors" title="Clique para ler a nota inteira">{{ snap.notes }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="cockpit-card p-6 text-center border-dashed border-brandBorder/50 mt-6">
+        <p class="text-brandMuted">Nenhum snapshot registrado ainda.</p>
+    </div>
+    {% endif %}
+
+    <div class="cockpit-card p-8 mt-6">
+        <div class="flex justify-between items-center mb-6 border-b border-brandBorder/30 pb-4">
+            <h3 class="text-lg font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <svg class="w-5 h-5 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                Adicionar Novo Snapshot
+            </h3>
+            <button type="button" onclick="const f = document.getElementById('form-metrics'); f.classList.toggle('hidden'); this.innerText = f.classList.contains('hidden') ? 'ADICIONAR SNAPSHOT' : 'FECHAR FORMULÁRIO'" class="btn px-4 py-2 bg-brandBorder/20 hover:bg-brandBorder/40 text-white rounded-lg text-xs font-bold transition-colors">
+                ADICIONAR SNAPSHOT
+            </button>
+        </div>
+        
+        <form id="form-metrics" action="/publications/{{ folder_id }}/item/{{ item.id }}/metrics" method="POST" class="space-y-8 hidden" onsubmit="return checkDuplicateSnapshot()">
+            <!-- Basic Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-brandBorder/30">
+                <div>
+                    <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">URL da Publicação (LinkedIn)</label>
+                    <input type="text" name="linkedin_url" value="{{ item.linkedin_url | default('') }}" placeholder="https://linkedin.com/posts/..." class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors placeholder:text-brandMuted/30">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Data da Publicação</label>
+                    <input type="date" name="published_at" value="{{ item.published_at | default('') }}" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark]">
+                </div>
+            </div>
+
+            <!-- Snapshot Info -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-brandBorder/30">
+                <div>
+                    <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Label do Snapshot</label>
+                    <select name="label" onchange="document.getElementById('custom-label-container').classList.toggle('hidden', this.value !== 'personalizado')" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                        <option value="inicial">Inicial</option>
+                        <option value="24h">24h</option>
+                        <option value="72h">72h</option>
+                        <option value="7d">7d</option>
+                        <option value="30d">30d</option>
+                        <option value="personalizado">Personalizado...</option>
+                    </select>
+                </div>
+                <div id="custom-label-container" class="hidden">
+                    <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Nome Customizado</label>
+                    <input type="text" name="custom_label" placeholder="Ex: Campanha X" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Data de Captura</label>
+                    <input type="date" name="captured_at" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark]" title="Deixe em branco para usar a data atual">
+                </div>
+            </div>
+
+            <!-- Funnel Metrics -->
+            <div>
+                <h4 class="text-xs font-mono font-bold text-brandSecondary uppercase tracking-widest mb-4">Alcance e Distribuição</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Impressões</label>
+                        <input type="number" min="0" name="impressions" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Alcance (Reach)</label>
+                        <input type="number" min="0" name="reach" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Engagement Metrics -->
+            <div>
+                <h4 class="text-xs font-mono font-bold text-brandSecondary uppercase tracking-widest mb-4">Engajamento</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Reações</label>
+                        <input type="number" min="0" name="reactions" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Comentários</label>
+                        <input type="number" min="0" name="comments" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Compartilhamentos</label>
+                        <input type="number" min="0" name="shares" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Salvamentos</label>
+                        <input type="number" min="0" name="saves" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Envios (Sends)</label>
+                        <input type="number" min="0" name="sends" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Metrics -->
+            <div>
+                <h4 class="text-xs font-mono font-bold text-brandSecondary uppercase tracking-widest mb-4">Conversão</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Visitas ao Perfil</label>
+                        <input type="number" min="0" name="profile_views" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Novos Seguidores</label>
+                        <input type="number" min="0" name="followers_gained" value="0" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Qualitative -->
+            <div>
+                <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Observações / Leitura Qualitativa</label>
+                <textarea name="notes" rows="4" placeholder="Insira suas observações, aprendizados ou insights sobre a performance da peça..." class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors resize-none"></textarea>
+            </div>
+            
+            <div class="pt-4 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-generate-ai" onclick="generateAIAnalysis('{{ folder_id }}', '{{ item.id }}')" class="btn px-4 py-2 bg-brandAccent hover:bg-brandAccent/80 text-[#020205] shadow-lg shadow-brandAccent/20 transition-all font-bold rounded-lg border border-brandAccent flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>Gerar análise com IA</span>
+                    </button>
+                    <span id="ai-error-msg" class="text-xs text-status-red hidden font-bold">Não foi possível gerar a análise agora.</span>
+                </div>
+                <button type="submit" class="btn px-8 py-3 bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white shadow-lg shadow-brandAccentPurple/20 transition-all active:scale-[0.99] font-bold rounded-lg border border-brandAccentPurple/50">SALVAR SNAPSHOT</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
 </div>
 
 <script>
+    async function generateAIAnalysis(folderId, itemId) {
+        const form = document.getElementById('form-metrics');
+        const btn = document.getElementById('btn-generate-ai');
+        const errorMsg = document.getElementById('ai-error-msg');
+        const notesArea = form.querySelector('textarea[name="notes"]');
+        
+        errorMsg.classList.add('hidden');
+        
+        const formData = new FormData(form);
+        
+        // Disable button and show loading
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-wait');
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-[#020205]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Analisando...`;
+        
+        try {
+            const response = await fetch(`/publications/${folderId}/item/${itemId}/metrics/generate-analysis`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success' && result.analysis) {
+                notesArea.value = result.analysis;
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Análise gerada`;
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75', 'cursor-wait');
+                }, 3000);
+            } else {
+                throw new Error(result.message || 'Erro desconhecido');
+            }
+        } catch (error) {
+            console.error('Erro na geração de IA:', error);
+            errorMsg.innerText = error.message || "Não foi possível gerar a análise agora.";
+            errorMsg.classList.remove('hidden');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-wait');
+        }
+    }
+    
+    function checkDuplicateSnapshot() {
+        const form = document.getElementById('form-metrics');
+        if (!form) return true;
+        
+        const labelSelect = form.querySelector('select[name="label"]');
+        const customLabelInput = form.querySelector('input[name="custom_label"]');
+        let formLabel = labelSelect.value;
+        if (formLabel === 'personalizado') {
+            formLabel = customLabelInput.value.trim() || 'custom';
+        }
+        
+        let formDate = form.querySelector('input[name="captured_at"]')?.value;
+        if (!formDate) {
+            const now = new Date();
+            formDate = now.toISOString().split('T')[0];
+        }
+        
+        const rows = document.querySelectorAll('#snapshots-table-body tr');
+        for (let row of rows) {
+            if (row.dataset.snapLabel === formLabel && row.dataset.snapDate === formDate) {
+                return confirm('Já existe um snapshot com este label e esta data. Deseja criar uma nova captura mesmo assim?');
+            }
+        }
+        return true;
+    }
+
+    function openLightbox(url, filename, category) {
+        document.getElementById('lightbox-image').src = url;
+        document.getElementById('lightbox-title').innerText = filename;
+        document.getElementById('lightbox-btn-open').href = url;
+        document.getElementById('lightbox-btn-download').href = url;
+        
+        document.getElementById('lightbox-btn-copy').onclick = function() { copyToClipboardText(url); };
+        document.getElementById('lightbox-btn-delete').onclick = function() { 
+            closeLightbox();
+            confirmDeleteAsset(category, filename); 
+        };
+        
+        const modal = document.getElementById('lightbox-modal');
+        modal.classList.remove('hidden');
+        modal.focus();
+    }
+    
+    function closeLightbox(event) {
+        if(event) event.stopPropagation();
+        document.getElementById('lightbox-modal').classList.add('hidden');
+        document.getElementById('lightbox-image').src = '';
+    }
+    
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            const modal = document.getElementById('lightbox-modal');
+            if (!modal.classList.contains('hidden')) {
+                closeLightbox();
+            }
+        }
+    });
+
+    function confirmDeleteAsset(category, filename) {
+        if (confirm(`Tem certeza que deseja excluir este asset? Esta ação removerá o arquivo do disco e do manifest.
+
+Arquivo: ${filename}`)) {
+            document.getElementById('input-delete-category').value = category;
+            document.getElementById('input-delete-filename').value = filename;
+            document.getElementById('form-delete-asset').submit();
+        }
+    }
+    
+    function confirmDeletePrompt(prompt_id, prompt_index) {
+        if (confirm("Tem certeza que deseja excluir este prompt visual?")) {
+            document.getElementById('input-delete-prompt-id').value = prompt_id || "";
+            document.getElementById('input-delete-prompt-index').value = prompt_index;
+            document.getElementById('form-delete-prompt').submit();
+        }
+    }
     function copyToClipboardText(text) {
         navigator.clipboard.writeText(text).then(() => {
             const btn = event.currentTarget;
             const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<svg class="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copiado!';
-            setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+            btn.innerHTML = 'COPIADO!';
+            btn.classList.add('text-status-green', 'border-status-green/50');
+            setTimeout(() => { 
+                btn.innerHTML = originalHTML; 
+                btn.classList.remove('text-status-green', 'border-status-green/50');
+            }, 2000);
         });
+    }
+
+    function copyToClipboard(elementId) {
+        const el = document.getElementById(elementId);
+        if(el) {
+            navigator.clipboard.writeText(el.innerText || el.value).then(() => {
+                alert('Payload copiado para a área de transferência!');
+            });
+        }
     }
 
     function switchTab(tabId) {
@@ -276,8 +735,8 @@
         
         // Resetar estilo de todas as abas
         document.querySelectorAll('.tab-btn').forEach(el => {
-            el.classList.remove('border-vercelAccent', 'text-white');
-            el.classList.add('border-transparent', 'text-vercelMuted');
+            el.classList.remove('border-brandAccentPurple', 'text-white', 'bg-brandAccentPurple/10');
+            el.classList.add('border-transparent', 'text-brandMuted', 'bg-transparent');
         });
         
         // Mostrar conteúdo selecionado
@@ -290,20 +749,68 @@
         // Estilizar aba ativa
         const activeBtn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
         if(activeBtn) {
-            activeBtn.classList.remove('border-transparent', 'text-vercelMuted');
-            activeBtn.classList.add('border-vercelAccent', 'text-white');
+            activeBtn.classList.remove('border-transparent', 'text-brandMuted', 'bg-transparent');
+            activeBtn.classList.add('border-brandAccentPurple', 'text-white', 'bg-brandAccentPurple/10');
         }
         
-        // Salvar aba no sessionStorage para manter ao recarregar (ex: apos upload)
         sessionStorage.setItem('brandos-active-tab', tabId);
     }
 
-    // Restaurar aba ativa ao carregar a página
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedTab = sessionStorage.getItem('brandos-active-tab');
-        if (savedTab) {
-            switchTab(savedTab);
+    function togglePdfPreview(index, folderId, itemId, filename) {
+        const wrapper = document.getElementById('pdf-iframe-wrapper-' + index);
+        const btn = document.getElementById('btn-toggle-pdf-' + index);
+        const icon = document.getElementById('icon-toggle-pdf-' + index);
+        
+        if (wrapper.style.display === 'none') {
+            wrapper.style.display = 'block';
+            btn.innerHTML = 'MINIMIZAR PREVIEW <svg class="w-3 h-3 transform transition-transform inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+            localStorage.setItem(`brandos_pdf_preview_collapsed_${folderId}_${itemId}_${filename}`, 'false');
+        } else {
+            wrapper.style.display = 'none';
+            btn.innerHTML = 'MOSTRAR PREVIEW <svg class="w-3 h-3 transform transition-transform rotate-180 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+            localStorage.setItem(`brandos_pdf_preview_collapsed_${folderId}_${itemId}_${filename}`, 'true');
         }
+    }
+
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        // Read hash first, then fallback to sessionStorage, then default to 'conteudo'
+        let activeTab = 'conteudo';
+        if (window.location.hash) {
+            const hash = window.location.hash.replace('#tab-', '');
+            if (['conteudo', 'assets', 'publicacao', 'metricas'].includes(hash)) {
+                activeTab = hash;
+            }
+        } else {
+            const savedTab = sessionStorage.getItem('brandos-active-tab');
+            if (savedTab) {
+                activeTab = savedTab;
+            }
+        }
+        switchTab(activeTab);
+
+        
+        // Inicializa estado do preview de PDFs
+        document.querySelectorAll('[id^="pdf-iframe-wrapper-"]').forEach((el) => {
+            const index = el.id.split('-').pop();
+            const container = document.getElementById(`pdf-preview-container-${index}`);
+            if (container) {
+                const header = container.querySelector('.cursor-pointer');
+                if (header) {
+                    const onclickStr = header.getAttribute('onclick');
+                    const match = onclickStr.match(/'([^']*)',\s*'([^']*)',\s*'([^']*)',\s*'([^']*)'/);
+                    if (match && match.length === 5) {
+                        const folderId = match[2];
+                        const itemId = match[3];
+                        const filename = match[4];
+                        const state = localStorage.getItem(`brandos_pdf_preview_collapsed_${folderId}_${itemId}_${filename}`);
+                        if (state === 'true') {
+                            togglePdfPreview(index, folderId, itemId, filename);
+                        }
+                    }
+                }
+            }
+        });
     });
 </script>
 {% endblock %}

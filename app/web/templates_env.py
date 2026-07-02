@@ -19,7 +19,8 @@ def translate_status(status):
         "partially_published": "Parcialmente Publicado",
         "in_progress": "Em Andamento",
         "pending": "Pendente",
-        "missing": "Ausente"
+        "missing": "Ausente",
+        "used_as_asset": "Asset Vinculado"
     }
     return mapping.get(status, status) if status else status
 
