@@ -73,7 +73,21 @@
             ARQUIVO NÃO ENCONTRADO
         </button>
         {% endif %}
-</div>
+    </div>
+
+    <!-- Conteúdo da Peça -->
+    <div class="cockpit-card overflow-hidden">
+        <div class="bg-black/40 p-4 border-b border-brandBorder/30">
+            <h3 class="text-sm font-semibold text-white">Conteúdo do Arquivo</h3>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[70vh]">
+            {% if item.content == "Arquivo não encontrado no disco." %}
+            <p class="text-status-red font-mono text-sm">{{ item.content }}</p>
+            {% else %}
+            <pre class="text-sm text-brandMuted whitespace-pre-wrap font-sans leading-relaxed">{{ item.content }}</pre>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 <!-- TAB: ASSETS -->
@@ -418,6 +432,33 @@
     </div>
     {% endif %}
 
+    {% if item.assets and item.assets.analytics %}
+    <div class="cockpit-card p-6 border border-brandBorder/50 mt-6 bg-[#020205]">
+        <h3 class="text-sm font-bold text-brandSecondary mb-4 uppercase tracking-wide flex items-center gap-2">
+            <svg class="w-4 h-4 text-brandAccentCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            Arquivos de Origem
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for asset in item.assets.analytics %}
+            <div class="p-4 border border-brandBorder/30 rounded-lg bg-brandBg/30 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-brandAccentCyan/10 flex items-center justify-center text-brandAccentCyan">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-white">{{ asset.filename }}</p>
+                        <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mt-1">LinkedIn Analytics • {{ asset.uploaded_at[:16] }}</p>
+                    </div>
+                </div>
+                <div>
+                    <span class="px-2 py-1 bg-brandAccentCyan/20 text-brandAccentCyan text-[10px] font-bold rounded">IMPORTADO</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     {% if item.metrics and item.metrics.snapshots %}
     <div class="cockpit-card p-6 border border-brandBorder/50 mt-6">
         <h3 class="text-sm font-bold text-brandSecondary mb-4 uppercase tracking-wide">Histórico de Snapshots</h3>
@@ -472,6 +513,45 @@
         </div>
         
         <form id="form-metrics" action="/publications/{{ folder_id }}/item/{{ item.id }}/metrics" method="POST" class="space-y-8 hidden" onsubmit="return checkDuplicateSnapshot()">
+            <div id="import-linkedin-section" class="mb-8 p-6 bg-[#020205] border border-brandBorder/50 rounded-lg">
+                <h4 class="text-sm font-bold text-brandSecondary mb-2 uppercase tracking-wide">Importar Analytics do LinkedIn</h4>
+                <p class="text-xs text-brandMuted mb-4">Envie o arquivo exportado do LinkedIn Analytics (.xlsx ou .csv) para preencher automaticamente os dados do snapshot.</p>
+                <div class="flex items-center gap-4">
+                    <input type="file" id="linkedin-file-input" accept=".xlsx, .csv" class="text-xs text-brandMuted file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brandBorder/20 file:text-white hover:file:bg-brandBorder/40 transition-colors">
+                    <button type="button" id="btn-import-linkedin" onclick="importLinkedInAnalytics('{{ folder_id }}', '{{ item.id }}')" class="btn px-4 py-2 bg-brandBorder hover:bg-brandBorderActive text-white rounded-lg text-xs font-bold transition-colors shadow-lg flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span>Importar arquivo</span>
+                    </button>
+                </div>
+                <p id="import-error-msg" class="text-xs text-status-red mt-3 hidden"></p>
+                
+                <div id="import-preview-card" class="mt-6 p-5 border border-brandAccentCyan/30 bg-brandAccentCyan/5 rounded-lg hidden">
+                    <div class="flex justify-between items-start mb-4">
+                        <h5 class="text-xs font-bold text-brandAccentCyan uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            DADOS IMPORTADOS DO LINKEDIN
+                        </h5>
+                        <span class="text-[10px] text-brandAccentCyan/70 font-mono" id="import-source-filename"></span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                        <div><span class="text-brandMuted block">Impressões:</span><span id="prev-imp" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Alcance:</span><span id="prev-reach" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Reações:</span><span id="prev-react" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Comentários:</span><span id="prev-comm" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Compart.:</span><span id="prev-share" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Salvamentos:</span><span id="prev-save" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Envios:</span><span id="prev-send" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Visitas de Perfil:</span><span id="prev-view" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Seguidores Obtidos:</span><span id="prev-foll" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Total Interações:</span><span id="prev-eng" class="font-bold text-white">0</span></div>
+                        <div><span class="text-brandMuted block">Taxa (Imp):</span><span id="prev-tx-imp" class="font-bold text-brandAccentCyan">0%</span></div>
+                        <div><span class="text-brandMuted block">Taxa (Alc):</span><span id="prev-tx-reach" class="font-bold text-brandAccent">0%</span></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-brandAccentCyan/20 flex items-center justify-between">
+                        <p class="text-xs text-brandAccentCyan/80 font-bold">⚠️ Revise os dados abaixo antes de salvar o snapshot.</p>
+                    </div>
+                </div>
+            </div>
             <!-- Basic Info -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-brandBorder/30">
                 <div>
@@ -624,6 +704,87 @@
         } catch (error) {
             console.error('Erro na geração de IA:', error);
             errorMsg.innerText = error.message || "Não foi possível gerar a análise agora.";
+            errorMsg.classList.remove('hidden');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-wait');
+        }
+    }
+    
+    async function importLinkedInAnalytics(folderId, itemId) {
+        const fileInput = document.getElementById('linkedin-file-input');
+        const btn = document.getElementById('btn-import-linkedin');
+        const errorMsg = document.getElementById('import-error-msg');
+        const previewCard = document.getElementById('import-preview-card');
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            errorMsg.innerText = "Por favor, selecione um arquivo primeiro.";
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+        
+        errorMsg.classList.add('hidden');
+        previewCard.classList.add('hidden');
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-wait');
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Importando...</span>`;
+        
+        try {
+            const response = await fetch(`/publications/${folderId}/item/${itemId}/metrics/import-linkedin`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success' && result.metrics) {
+                // Populate the form
+                const form = document.getElementById('form-metrics');
+                
+                if (result.metrics.impressions !== undefined) form.querySelector('input[name="impressions"]').value = result.metrics.impressions;
+                if (result.metrics.reach !== undefined) form.querySelector('input[name="reach"]').value = result.metrics.reach;
+                if (result.metrics.reactions !== undefined) form.querySelector('input[name="reactions"]').value = result.metrics.reactions;
+                if (result.metrics.comments !== undefined) form.querySelector('input[name="comments"]').value = result.metrics.comments;
+                if (result.metrics.shares !== undefined) form.querySelector('input[name="shares"]').value = result.metrics.shares;
+                if (result.metrics.saves !== undefined) form.querySelector('input[name="saves"]').value = result.metrics.saves;
+                if (result.metrics.sends !== undefined) form.querySelector('input[name="sends"]').value = result.metrics.sends;
+                if (result.metrics.profile_views !== undefined) form.querySelector('input[name="profile_views"]').value = result.metrics.profile_views;
+                if (result.metrics.followers_gained !== undefined) form.querySelector('input[name="followers_gained"]').value = result.metrics.followers_gained;
+                
+                // Show preview card
+                document.getElementById('import-source-filename').innerText = result.source.filename;
+                document.getElementById('prev-imp').innerText = result.metrics.impressions;
+                document.getElementById('prev-reach').innerText = result.metrics.reach;
+                document.getElementById('prev-react').innerText = result.metrics.reactions;
+                document.getElementById('prev-comm').innerText = result.metrics.comments;
+                document.getElementById('prev-share').innerText = result.metrics.shares;
+                document.getElementById('prev-save').innerText = result.metrics.saves;
+                document.getElementById('prev-send').innerText = result.metrics.sends;
+                document.getElementById('prev-view').innerText = result.metrics.profile_views;
+                document.getElementById('prev-foll').innerText = result.metrics.followers_gained;
+                document.getElementById('prev-eng').innerText = result.metrics.total_engagements;
+                document.getElementById('prev-tx-imp').innerText = result.metrics.engagement_rate_by_impressions + "%";
+                document.getElementById('prev-tx-reach').innerText = result.metrics.engagement_rate_by_reach + "%";
+                
+                previewCard.classList.remove('hidden');
+                
+                btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Importado!</span>`;
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75', 'cursor-wait');
+                }, 3000);
+            } else {
+                throw new Error(result.message || 'Erro ao importar arquivo.');
+            }
+        } catch (error) {
+            console.error('Erro na importação:', error);
+            errorMsg.innerText = error.message || "Não foi possível importar o arquivo agora.";
             errorMsg.classList.remove('hidden');
             btn.innerHTML = originalHtml;
             btn.disabled = false;

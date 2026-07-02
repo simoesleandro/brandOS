@@ -272,6 +272,61 @@ async def generate_metrics_analysis(
         traceback.print_exc()
         return JSONResponse({"status": "error", "message": "Não foi possível gerar a análise agora. Você ainda pode preencher a nota manualmente."})
 
+@router.post("/{folder_id}/item/{item_id}/metrics/import-linkedin")
+async def import_linkedin_metrics(
+    request: Request,
+    folder_id: str,
+    item_id: str,
+    file: UploadFile = File(...)
+):
+    import os
+    import tempfile
+    import traceback
+    from fastapi.responses import JSONResponse
+    
+    filename = file.filename
+    if not (filename.lower().endswith('.xlsx') or filename.lower().endswith('.csv')):
+        return JSONResponse({"status": "error", "message": "Formato inválido. Apenas arquivos .xlsx e .csv são suportados."})
+        
+    try:
+        # Save temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
+            tmp_path = tmp.name
+            content = await file.read()
+            tmp.write(content)
+            
+        try:
+            extracted_metrics = service.import_linkedin_analytics(folder_id, item_id, tmp_path, filename)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+                
+        # Calculate derived metrics again to ensure exact formatting requested
+        imp = extracted_metrics.get("impressions", 0)
+        reach = extracted_metrics.get("reach", 0)
+        total_eng = extracted_metrics.get("total_engagements", 0)
+        profile_views = extracted_metrics.get("profile_views", 0)
+        
+        eng_rate_imp = round((total_eng / imp * 100), 2) if imp > 0 else 0
+        eng_rate_reach = round((total_eng / reach * 100), 2) if reach > 0 else 0
+        profile_view_rate = round((profile_views / reach * 100), 2) if reach > 0 else 0
+        
+        extracted_metrics["engagement_rate_by_impressions"] = eng_rate_imp
+        extracted_metrics["engagement_rate_by_reach"] = eng_rate_reach
+        extracted_metrics["profile_view_rate_by_reach"] = profile_view_rate
+        
+        return JSONResponse({
+            "status": "success",
+            "metrics": extracted_metrics,
+            "source": {
+                "filename": filename
+            }
+        })
+    except Exception as e:
+        print(f"!!! ERRO AO IMPORTAR LINKEDIN ANALYTICS [{folder_id}/{item_id}] !!!")
+        traceback.print_exc()
+        return JSONResponse({"status": "error", "message": str(e) if "O arquivo foi lido" in str(e) else "Não foi possível interpretar o arquivo do LinkedIn."})
+
 @router.post("/{folder_id}/item/{item_id}/assets/delete")
 async def delete_asset(
     request: Request,

@@ -781,3 +781,126 @@ Diferenças calculadas:
             print(f"Erro no Gemini: {e}")
             raise e
 
+    def import_linkedin_analytics(self, folder_id: str, item_id: str, file_path: str, original_filename: str) -> dict:
+        import pandas as pd
+        import shutil
+        from datetime import datetime
+        import re
+        
+        # 1. Armazenar o arquivo em data/assets/{folder_id}-{item_id}/analytics/
+        asset_folder_name = f"{folder_id}-{item_id}"
+        analytics_dir = os.path.join(self.assets_dir, asset_folder_name, "analytics")
+        os.makedirs(analytics_dir, exist_ok=True)
+        
+        # Sanitizar filename
+        safe_filename = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', original_filename)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        final_filename = f"{timestamp}_{safe_filename}"
+        
+        dest_path = os.path.join(analytics_dir, final_filename)
+        shutil.copy2(file_path, dest_path)
+        
+        # Atualizar manifest.json
+        manifest_path = os.path.join(self.assets_dir, asset_folder_name, "manifest.json")
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+                
+            if "files" not in manifest:
+                manifest["files"] = {}
+                
+            if "analytics" not in manifest["files"]:
+                manifest["files"]["analytics"] = []
+                
+            manifest["files"]["analytics"].append({
+                "filename": final_filename,
+                "original_filename": original_filename,
+                "path": f"analytics/{final_filename}",
+                "uploaded_at": datetime.now().isoformat(),
+                "source": "linkedin_export",
+                "status": "imported"
+            })
+            
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2, ensure_ascii=False)
+                
+        # 2. Ler arquivo e extrair métricas
+        try:
+            if original_filename.lower().endswith('.csv'):
+                # LinkedIn usa CSV as vezes com header na linha 1 ou 2
+                df = pd.read_csv(dest_path)
+            else:
+                df = pd.read_excel(dest_path)
+        except Exception as e:
+            print(f"Erro ao ler arquivo com pandas: {e}")
+            raise Exception("Não foi possível ler o arquivo. Formato inválido ou corrompido.")
+            
+        found_metrics = {
+            "impressions": 0,
+            "reach": 0,
+            "reactions": 0,
+            "comments": 0,
+            "shares": 0,
+            "saves": 0,
+            "sends": 0,
+            "profile_views": 0,
+            "followers_gained": 0
+        }
+        
+        keywords = {
+            "impressions": ["impressões", "impressions"],
+            "reach": ["alcance", "usuários alcançados", "membros alcançados", "reach", "reached members"],
+            "reactions": ["reações", "reactions", "gostei", "likes"],
+            "comments": ["comentários", "comments", "comentarios"],
+            "shares": ["compartilhamentos", "shares", "reposts", "republicações"],
+            "saves": ["salvamentos", "saves"],
+            "sends": ["envios", "sends"],
+            "profile_views": ["visualizações de perfil", "profile views", "profile visits"],
+            "followers_gained": ["seguidores obtidos", "new followers", "followers gained"]
+        }
+        
+        df.columns = [str(c).lower().strip() for c in df.columns]
+        
+        def extract_value(df, keys):
+            for col in df.columns:
+                for k in keys:
+                    if k in col:
+                        val = pd.to_numeric(df[col], errors='coerce').sum()
+                        if not pd.isna(val) and val > 0:
+                            return int(val)
+            
+            for i, row in df.iterrows():
+                row_vals = [str(v).lower().strip() for v in row.values]
+                for j, v in enumerate(row_vals):
+                    for k in keys:
+                        if k in v:
+                            if j + 1 < len(row.values):
+                                val = pd.to_numeric(row.values[j+1], errors='coerce')
+                                if not pd.isna(val):
+                                    return int(val)
+                            if i + 1 < len(df):
+                                val = pd.to_numeric(df.iloc[i+1, j], errors='coerce')
+                                if not pd.isna(val):
+                                    return int(val)
+            return 0
+            
+        for metric_key, keys in keywords.items():
+            found_metrics[metric_key] = extract_value(df, keys)
+            
+        total_engagements = sum([
+            found_metrics["reactions"],
+            found_metrics["comments"],
+            found_metrics["shares"],
+            found_metrics["saves"],
+            found_metrics["sends"]
+        ])
+        
+        found_metrics["total_engagements"] = total_engagements
+        
+        if found_metrics["impressions"] == 0 and found_metrics["reach"] == 0 and total_engagements == 0:
+            raise Exception("O arquivo foi lido, mas o BrandOS não conseguiu identificar as métricas principais. Verifique se o arquivo é o export correto do LinkedIn.")
+            
+        # Add original filename to the result for display
+        found_metrics["source_filename"] = original_filename
+        
+        return found_metrics
