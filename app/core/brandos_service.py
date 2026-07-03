@@ -73,9 +73,7 @@ class BrandOSService:
                 updated = True
                 
         if updated:
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(history, f, indent=2, ensure_ascii=False)
-            self._rebuild_markdown_log(history)
+            self.save_history(history)
 
 
     def _rebuild_markdown_log(self, history):
@@ -136,6 +134,13 @@ class BrandOSService:
         except Exception:
             return []
 
+    def save_history(self, history: list) -> None:
+        """Salva o history no publication-log.json e reconstrói o markdown."""
+        json_path = os.path.join(self.registry_dir, "publication-log.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2, ensure_ascii=False)
+        self._rebuild_markdown_log(history)
+
     def update_item_status(self, folder_id: str, item_id: str, new_status: str):
         """Atualiza o status de um item específico."""
         history = self.list_history()
@@ -158,9 +163,7 @@ class BrandOSService:
                     break
                 
         if updated:
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(history, f, indent=2, ensure_ascii=False)
-            self._rebuild_markdown_log(history)
+            self.save_history(history)
 
     def get_editorial_calendar(self) -> list:
         """Retorna uma lista de peças publicáveis para a Agenda Editorial."""
@@ -252,8 +255,7 @@ class BrandOSService:
                     break
                     
         if updated:
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(history, f, indent=2, ensure_ascii=False)
+            self.save_history(history)
         else:
             print(f"[BrandOS] Item não encontrado para agendamento {folder_id} {item_id}")
 
@@ -365,10 +367,7 @@ class BrandOSService:
                     break
         
         if updated:
-            import json
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(history, f, indent=2, ensure_ascii=False)
-            self._rebuild_markdown_log(history)
+            self.save_history(history)
         else:
             raise Exception("Item não encontrado no publication-log.json")
 
@@ -1525,7 +1524,8 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "source": "generated_from_briefing",
                 "briefing_file": filename,
                 "planned_week_start": data_inicial_str,
-                "planned_day": "segunda"
+                "planned_day": "segunda",
+                "generated_folder": folder_name
             },
             {
                 "item_id": f"post-quarta-{timestamp}",
@@ -1539,7 +1539,8 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "source": "generated_from_briefing",
                 "briefing_file": filename,
                 "planned_week_start": data_inicial_str,
-                "planned_day": "quarta"
+                "planned_day": "quarta",
+                "generated_folder": folder_name
             },
             {
                 "item_id": f"post-sexta-{timestamp}",
@@ -1553,7 +1554,8 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "source": "generated_from_briefing",
                 "briefing_file": filename,
                 "planned_week_start": data_inicial_str,
-                "planned_day": "sexta"
+                "planned_day": "sexta",
+                "generated_folder": folder_name
             }
         ]
         
@@ -1584,3 +1586,901 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         print("[CMO] Semana gerada com sucesso.")
         return {"status": "success", "folder": folder_name}
+
+
+    def get_generated_week_details(self, folder_name: str) -> dict:
+        """
+        Retorna os detalhes da semana gerada.
+        """
+        import os
+        folder_name = os.path.basename(folder_name)
+        folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
+        
+        if not os.path.exists(folder_path):
+            raise ValueError(f"A semana gerada '{folder_name}' não existe.")
+            
+        result = {
+            "folder_name": folder_name,
+            "briefing_source": "Desconhecida",
+            "planned_week_start": "",
+            "warnings": [],
+            "auxiliary_files": {},
+            "posts": {
+                "segunda": None,
+                "quarta": None,
+                "sexta": None
+            },
+            "general_status": "generated"
+        }
+        
+        # Load registry to find matching items
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        log_items = []
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    log_data = json.load(f)
+                    log_items = log_data.get("items", [])
+            except Exception as e:
+                result["warnings"].append(f"Erro ao carregar registry: {str(e)}")
+                
+        # Filter items for this generated folder
+        folder_items = [i for i in log_items if i.get("source") == "generated_from_briefing" and i.get("generated_folder") == folder_name]
+        
+        if folder_items:
+            result["briefing_source"] = folder_items[0].get("briefing_file", "Desconhecida")
+            result["planned_week_start"] = folder_items[0].get("planned_week_start", "")
+            
+        approved_count = 0
+        total_posts = 0
+        
+        # Map posts
+        post_mapping = {
+            "segunda": "03-post-segunda.md",
+            "quarta": "04-post-quarta.md",
+            "sexta": "05-post-sexta.md"
+        }
+        
+        for day, filename in post_mapping.items():
+            file_path = os.path.join(folder_path, filename)
+            content = ""
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                except Exception as e:
+                    content = f"Erro ao ler arquivo: {str(e)}"
+            else:
+                result["warnings"].append(f"Arquivo {filename} não encontrado.")
+                
+            # Find item in registry
+            item = next((i for i in folder_items if i.get("planned_day") == day), None)
+            
+            if item:
+                total_posts += 1
+                if item.get("status") == "approved":
+                    approved_count += 1
+                    
+            result["posts"][day] = {
+                "file": filename,
+                "content": content,
+                "status": item.get("status", "unknown") if item else "unknown",
+                "title": item.get("title", f"Post {day}") if item else f"Post {day}",
+                "item_id": item.get("item_id") if item else None,
+                "scheduled_date": item.get("scheduled_date") if item else None,
+                "scheduled_time": item.get("scheduled_time") if item else None
+            }
+            
+        # Calc general status
+        if total_posts > 0:
+            if approved_count == total_posts:
+                result["general_status"] = "approved"
+            elif approved_count > 0:
+                result["general_status"] = "partially_approved"
+            else:
+                result["general_status"] = "generated"
+                
+        # Map auxiliary files
+        aux_mapping = {
+            "briefing": "01-briefing.md",
+            "plano": "02-plano-editorial.md",
+            "instrucoes": "06-instrucoes-publicacao.md",
+            "prompts": "07-prompts-visuais.md"
+        }
+        
+        for key, filename in aux_mapping.items():
+            file_path = os.path.join(folder_path, filename)
+            content = ""
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                except Exception as e:
+                    content = f"Erro ao ler arquivo: {str(e)}"
+            else:
+                result["warnings"].append(f"Arquivo auxiliar {filename} não encontrado.")
+                
+            result["auxiliary_files"][key] = {
+                "file": filename,
+                "content": content
+            }
+            
+        return result
+        
+    def edit_generated_post(self, folder_name: str, planned_day: str, content: str) -> dict:
+        import os, shutil, datetime, tempfile, json
+        
+        folder_name = os.path.basename(folder_name)
+        folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
+        
+        if not os.path.exists(folder_path):
+            raise ValueError(f"Pasta {folder_name} não encontrada.")
+            
+        if planned_day not in ["segunda", "quarta", "sexta"]:
+            raise ValueError("Dia inválido. Use 'segunda', 'quarta' ou 'sexta'.")
+            
+        filename = f"03-post-segunda.md" if planned_day == "segunda" else f"04-post-quarta.md" if planned_day == "quarta" else f"05-post-sexta.md"
+        file_path = os.path.join(folder_path, filename)
+        
+        if not os.path.exists(file_path):
+            raise ValueError(f"Arquivo {filename} não encontrado na pasta da semana.")
+            
+        # 1. Backup markdown
+        backups_dir = os.path.join(folder_path, "backups")
+        os.makedirs(backups_dir, exist_ok=True)
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        backup_file = os.path.join(backups_dir, f"{filename.replace('.md', '')}-{timestamp}.md")
+        
+        try:
+            shutil.copy2(file_path, backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do markdown: {e}")
+            
+        # 2. Write new content
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            raise ValueError(f"Erro ao salvar o conteúdo editado: {e}")
+            
+        # 3. Update registry
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        if not os.path.exists(log_path):
+            return {"status": "success", "message": "Arquivo salvo, mas publication-log não encontrado."}
+            
+        # Backup registry
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do publication-log.json: {e}")
+            
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                log_data = json.load(f)
+                
+            updated = False
+            for item in log_data:
+                if item.get("source") == "generated_from_briefing" and item.get("generated_folder") == folder_name and item.get("planned_day") == planned_day:
+                    item["updated_at"] = now.isoformat()
+                    item["last_edited_at"] = now.isoformat()
+                    
+                    if item.get("status") == "generated":
+                        item["status"] = "edited"
+                    updated = True
+                    break
+                    
+            if updated:
+                temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+                with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                    json.dump(log_data, f, indent=2, ensure_ascii=False)
+                os.replace(temp_path, log_path)
+                
+        except Exception as e:
+            raise ValueError(f"Erro ao atualizar publication-log.json: {e}")
+            
+        return {"status": "success", "message": "Post editado com sucesso."}
+    
+    def approve_generated_post(self, folder_name: str, planned_day: str) -> dict:
+        import os, shutil, datetime, tempfile, json
+        
+        folder_name = os.path.basename(folder_name)
+        if planned_day not in ["segunda", "quarta", "sexta"]:
+            raise ValueError("Dia inválido. Use 'segunda', 'quarta' ou 'sexta'.")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        if not os.path.exists(log_path):
+            raise ValueError("publication-log.json não encontrado.")
+            
+        # Load registry
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                log_data = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Erro ao ler registry: {e}")
+            
+        item_found = False
+        target_item = None
+        for item in log_data:
+            if item.get("source") == "generated_from_briefing" and item.get("generated_folder") == folder_name and item.get("planned_day") == planned_day:
+                target_item = item
+                item_found = True
+                break
+                
+        if not item_found:
+            raise ValueError("Post não encontrado no registry.")
+            
+        if target_item.get("status") == "approved":
+            return {"status": "success", "message": "Post já estava aprovado."}
+            
+        if target_item.get("status") not in ["generated", "edited"]:
+            raise ValueError(f"Status '{target_item.get('status')}' não permite aprovação.")
+            
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        # Backup registry
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do publication-log.json: {e}")
+            
+        target_item["status"] = "approved"
+        target_item["updated_at"] = now.isoformat()
+        if "approved_at" not in target_item:
+            target_item["approved_at"] = now.isoformat()
+            
+        # Save safe
+        try:
+            temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, log_path)
+        except Exception as e:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise ValueError(f"Erro ao atualizar publication-log.json: {e}")
+            
+        return {"status": "success", "message": "Post aprovado com sucesso."}
+    
+    def approve_generated_week(self, folder_name: str) -> dict:
+        import os, shutil, datetime, tempfile, json
+        
+        folder_name = os.path.basename(folder_name)
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        if not os.path.exists(log_path):
+            raise ValueError("publication-log.json não encontrado.")
+            
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                log_data = json.load(f)
+        except Exception as e:
+            raise ValueError(f"Erro ao ler registry: {e}")
+            
+        items_to_approve = []
+        for item in log_data:
+            if item.get("source") == "generated_from_briefing" and item.get("generated_folder") == folder_name and item.get("planned_day") in ["segunda", "quarta", "sexta"]:
+                items_to_approve.append(item)
+                
+        if not items_to_approve:
+            raise ValueError("Nenhum post principal encontrado para esta semana.")
+            
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        # Backup registry
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do publication-log.json: {e}")
+            
+        updated = False
+        for item in items_to_approve:
+            if item.get("status") in ["generated", "edited"]:
+                item["status"] = "approved"
+                item["updated_at"] = now.isoformat()
+                if "approved_at" not in item:
+                    item["approved_at"] = now.isoformat()
+                updated = True
+                
+        if updated:
+            try:
+                temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+                with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                    json.dump(log_data, f, indent=2, ensure_ascii=False)
+                os.replace(temp_path, log_path)
+            except Exception as e:
+                if 'temp_path' in locals() and os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise ValueError(f"Erro ao salvar publication-log.json: {e}")
+                
+        return {"status": "success", "message": "Semana aprovada com sucesso."}
+    
+
+    def _is_asset(self, item: dict) -> bool:
+        return (item.get("status") == "used_as_asset" or 
+                bool(item.get("linked_to_item_id")) or 
+                bool(item.get("asset_role")))
+                
+    def schedule_post(self, item_id: str, scheduled_date: str, scheduled_time: str, confirm: bool) -> dict:
+        import os, shutil, tempfile, json
+        from datetime import datetime
+        import zoneinfo
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        try:
+            dt_str = f"{scheduled_date}T{scheduled_time}:00"
+            dt_obj = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
+            tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            dt_aware = dt_obj.replace(tzinfo=tz)
+            now_aware = datetime.now(tz)
+            
+            if dt_aware < now_aware:
+                raise ValueError("Data e hora de agendamento não podem estar no passado.")
+        except Exception as e:
+            if "passado" in str(e):
+                raise ValueError(str(e))
+            raise ValueError(f"Data ou horário inválido: {e}")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        if not os.path.exists(log_path):
+            raise ValueError("Registry não encontrado.")
+            
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_item = None
+        for item in log_data:
+            if item.get("item_id") == item_id:
+                target_item = item
+                break
+                
+        if not target_item:
+            raise ValueError("Post não encontrado.")
+            
+        if self._is_asset(target_item):
+            raise ValueError("Assets vinculados não podem ser agendados como publicações principais.")
+            
+        if target_item.get("status") == "scheduled":
+            raise ValueError("Post já está agendado. Use a rota de reagendamento.")
+            
+        if target_item.get("status") != "approved":
+            raise ValueError(f"Post possui status '{target_item.get('status')}'. É necessário estar 'approved' para agendar.")
+            
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do registry: {e}")
+            
+        target_item["status"] = "scheduled"
+        target_item["scheduled_at"] = dt_str
+        target_item["scheduled_date"] = scheduled_date
+        target_item["scheduled_time"] = scheduled_time
+        target_item["timezone"] = "America/Sao_Paulo"
+        target_item["scheduled_by"] = "human"
+        target_item["scheduled_source"] = "brandos_calendar"
+        target_item["scheduled_at_created_at"] = now.isoformat()
+        target_item["updated_at"] = now.isoformat()
+        
+        try:
+            temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, log_path)
+        except Exception as e:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise ValueError(f"Erro ao salvar publication-log.json: {e}")
+            
+        return {"status": "success", "message": "Post agendado com sucesso."}
+        
+    def reschedule_post(self, item_id: str, scheduled_date: str, scheduled_time: str, confirm: bool) -> dict:
+        import os, shutil, tempfile, json
+        from datetime import datetime
+        import zoneinfo
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        try:
+            dt_str = f"{scheduled_date}T{scheduled_time}:00"
+            dt_obj = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
+            tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+            dt_aware = dt_obj.replace(tzinfo=tz)
+            now_aware = datetime.now(tz)
+            
+            if dt_aware < now_aware:
+                raise ValueError("Data e hora de reagendamento não podem estar no passado.")
+        except Exception as e:
+            if "passado" in str(e):
+                raise ValueError(str(e))
+            raise ValueError(f"Data ou horário inválido: {e}")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_item = None
+        for item in log_data:
+            if item.get("item_id") == item_id:
+                target_item = item
+                break
+                
+        if not target_item:
+            raise ValueError("Post não encontrado.")
+            
+        if self._is_asset(target_item):
+            raise ValueError("Assets vinculados não podem ser reagendados como publicações principais.")
+            
+        if target_item.get("status") != "scheduled":
+            raise ValueError(f"Post possui status '{target_item.get('status')}'. É necessário estar 'scheduled' para reagendar.")
+            
+        if target_item.get("scheduled_date") == scheduled_date and target_item.get("scheduled_time") == scheduled_time:
+            return {"status": "success", "message": "A data e horário são os mesmos, nenhuma alteração necessária."}
+            
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do registry: {e}")
+            
+        target_item["scheduled_at"] = dt_str
+        target_item["scheduled_date"] = scheduled_date
+        target_item["scheduled_time"] = scheduled_time
+        target_item["updated_at"] = now.isoformat()
+        target_item["rescheduled_at"] = now.isoformat()
+        target_item["rescheduled_by"] = "human"
+        
+        try:
+            temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, log_path)
+        except Exception as e:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise ValueError(f"Erro ao salvar publication-log.json: {e}")
+            
+        return {"status": "success", "message": "Post reagendado com sucesso."}
+        
+    def unschedule_post(self, item_id: str, confirm: bool) -> dict:
+        import os, shutil, tempfile, json
+        from datetime import datetime
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_item = None
+        for item in log_data:
+            if item.get("item_id") == item_id:
+                target_item = item
+                break
+                
+        if not target_item:
+            raise ValueError("Post não encontrado.")
+            
+        if self._is_asset(target_item):
+            raise ValueError("Assets vinculados não podem ser manipulados como publicações principais.")
+            
+        if target_item.get("status") != "scheduled":
+            raise ValueError(f"Post não está agendado (status atual: {target_item.get('status')}).")
+            
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(reg_backups_dir, exist_ok=True)
+        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
+        try:
+            shutil.copy2(log_path, reg_backup_file)
+        except Exception as e:
+            raise ValueError(f"Erro ao criar backup do registry: {e}")
+            
+        target_item["status"] = "approved"
+        
+        for key in ["scheduled_at", "scheduled_date", "scheduled_time"]:
+            if key in target_item:
+                del target_item[key]
+                
+        target_item["unscheduled_at"] = now.isoformat()
+        target_item["unscheduled_by"] = "human"
+        target_item["updated_at"] = now.isoformat()
+        
+        try:
+            temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, log_path)
+        except Exception as e:
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise ValueError(f"Erro ao salvar publication-log.json: {e}")
+            
+        return {"status": "success", "message": "Agendamento removido com sucesso."}
+    
+
+    def get_ops_dashboard(self) -> dict:
+        import os, json
+        from datetime import datetime, timedelta
+        import zoneinfo
+        
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        
+        counts = {
+            "total_main_posts": 0,
+            "generated_count": 0,
+            "edited_count": 0,
+            "approved_count": 0,
+            "scheduled_count": 0,
+            "published_count": 0,
+            "pending_count": 0,
+            "without_date_count": 0,
+            "overdue_count": 0,
+            "ready_to_schedule_count": 0,
+            "scheduled_next_7_days_count": 0
+        }
+        
+        pipeline_groups = {
+            "generated": [],
+            "edited": [],
+            "approved": [],
+            "scheduled": [],
+            "published": []
+        }
+        
+        lists = {
+            "next_7_days": [],
+            "ready_to_schedule": [],
+            "pending_reviews": [],
+            "overdue": [],
+            "warnings": []
+        }
+        
+        if not os.path.exists(log_path):
+            return {"counts": counts, "pipeline_groups": pipeline_groups, "lists": lists, "error": "publication-log.json não encontrado."}
+            
+        with open(log_path, "r", encoding="utf-8") as f:
+            try:
+                log_data = json.load(f)
+            except json.JSONDecodeError:
+                return {"counts": counts, "pipeline_groups": pipeline_groups, "lists": lists, "error": "publication-log.json inválido."}
+                
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_aware = datetime.now(tz)
+        today_str = now_aware.strftime("%Y-%m-%d")
+        next_7_days = [(now_aware + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(8)] # Include today up to 7 days ahead
+        
+        for item in log_data:
+            if self._is_asset(item):
+                continue
+                
+            counts["total_main_posts"] += 1
+            status = item.get("status", "unknown")
+            
+            # Basic status counts
+            if status == "generated": counts["generated_count"] += 1
+            elif status == "edited": counts["edited_count"] += 1
+            elif status == "approved": counts["approved_count"] += 1
+            elif status == "scheduled": counts["scheduled_count"] += 1
+            elif status == "published": counts["published_count"] += 1
+            
+            if status in ["generated", "edited"]:
+                counts["pending_count"] += 1
+                lists["pending_reviews"].append(item)
+                
+            # Date logic
+            sched_at = item.get("scheduled_at")
+            sched_date = item.get("scheduled_date")
+            sched_time = item.get("scheduled_time")
+            sched_for = item.get("scheduled_for")
+            pub_at = item.get("published_at")
+            
+            # Pipeline population
+            if status in pipeline_groups:
+                pipeline_groups[status].append(item)
+                
+            # Without date
+            if not sched_at and not sched_date and not sched_for and not pub_at:
+                counts["without_date_count"] += 1
+                
+            # Ready to schedule
+            if status == "approved" and not sched_at and not sched_date:
+                counts["ready_to_schedule_count"] += 1
+                lists["ready_to_schedule"].append(item)
+                
+            # Resolve unified date string for calculations
+            target_date_str = None
+            target_dt_aware = None
+            
+            if sched_at:
+                target_date_str = sched_at[:10]
+                try:
+                    dt_obj = datetime.strptime(sched_at, "%Y-%m-%dT%H:%M:%S")
+                    target_dt_aware = dt_obj.replace(tzinfo=tz)
+                except ValueError:
+                    lists["warnings"].append({"message": f"Erro de parse em scheduled_at no item {item.get('item_id', 'sem id')}", "item": item})
+            elif sched_date:
+                target_date_str = sched_date
+                try:
+                    t_str = sched_time if sched_time else "00:00"
+                    dt_obj = datetime.strptime(f"{sched_date}T{t_str}:00", "%Y-%m-%dT%H:%M:%S")
+                    target_dt_aware = dt_obj.replace(tzinfo=tz)
+                except ValueError:
+                    lists["warnings"].append({"message": f"Erro de parse em scheduled_date no item {item.get('item_id', 'sem id')}", "item": item})
+                    
+            if status == "scheduled" and target_dt_aware:
+                if target_dt_aware < now_aware and not pub_at and status != "published":
+                    counts["overdue_count"] += 1
+                    lists["overdue"].append(item)
+                elif target_date_str in next_7_days:
+                    counts["scheduled_next_7_days_count"] += 1
+                    lists["next_7_days"].append(item)
+                    
+            if not item.get("item_id"):
+                lists["warnings"].append({"message": f"Item sem item_id detectado", "item": item})
+                
+        return {
+            "counts": counts,
+            "pipeline_groups": pipeline_groups,
+            "lists": lists,
+            "error": None
+        }
+
+
+    def get_publication_assistant(self, item_id: str) -> dict:
+        import os, json
+        
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        if not os.path.exists(log_path):
+            raise ValueError("publication-log.json não encontrado.")
+            
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target = None
+        for i in log_data:
+            if i.get("item_id") == item_id:
+                target = i
+                break
+                
+        if not target:
+            raise ValueError("Post não encontrado.")
+            
+        if self._is_asset(target):
+            raise ValueError("Assets vinculados não podem ser publicados como publicações principais.")
+            
+        if target.get("status") not in ["scheduled", "publishing_ready", "published"]:
+            raise ValueError("Este post ainda não está agendado para publicação.")
+            
+        assistant_data = {
+            "item": target,
+            "post_content": "",
+            "instructions": "",
+            "prompts": "",
+            "linked_assets": []
+        }
+        
+        # Load post content
+        content_file = target.get("content_file")
+        if content_file:
+            path = os.path.join(self.base_dir, content_file)
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    assistant_data["post_content"] = f.read()
+                    
+        # Load auxiliary instructions if folder exists
+        folder = target.get("generated_folder")
+        if folder:
+            base_folder = os.path.join(self.base_dir, "data", "generated", folder)
+            inst_path = os.path.join(base_folder, "06-instrucoes-publicacao.md")
+            if os.path.exists(inst_path):
+                with open(inst_path, "r", encoding="utf-8") as f:
+                    assistant_data["instructions"] = f.read()
+            
+            prompt_path = os.path.join(base_folder, "07-prompts-visuais.md")
+            if os.path.exists(prompt_path):
+                with open(prompt_path, "r", encoding="utf-8") as f:
+                    assistant_data["prompts"] = f.read()
+                    
+        # Load linked assets
+        for i in log_data:
+            if i.get("linked_to_item_id") == item_id or i.get("status") == "used_as_asset":
+                # Very basic linkage check: if it explicitly points to this ID, or we assume it's part of the same folder if we had a more robust check. For now, strictly `linked_to_item_id`.
+                if i.get("linked_to_item_id") == item_id:
+                    assistant_data["linked_assets"].append(i)
+                    
+        return assistant_data
+
+    def mark_post_publishing_ready(self, item_id: str, confirm: bool) -> dict:
+        import os, json, tempfile, shutil
+        from datetime import datetime
+        import zoneinfo
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_idx = None
+        for idx, i in enumerate(log_data):
+            if i.get("item_id") == item_id:
+                if self._is_asset(i):
+                    raise ValueError("Assets vinculados não podem ser publicados como publicações principais.")
+                if i.get("status") != "scheduled":
+                    raise ValueError(f"Post possui status '{i.get('status')}'. É necessário estar 'scheduled' para marcar como ready.")
+                target_idx = idx
+                break
+                
+        if target_idx is None:
+            raise ValueError("Post não encontrado.")
+            
+        # Backup
+        backup_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_path = os.path.join(backup_dir, f"publication-log-{timestamp}.json")
+        shutil.copy2(log_path, backup_path)
+        
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_str = datetime.now(tz).isoformat()
+        
+        log_data[target_idx]["status"] = "publishing_ready"
+        log_data[target_idx]["publishing_ready_at"] = now_str
+        log_data[target_idx]["updated_at"] = now_str
+        
+        fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(log_data, f, indent=4, ensure_ascii=False)
+        os.replace(temp_path, log_path)
+        
+        return {"status": "success", "message": "Post marcado como pronto para publicação."}
+
+    def mark_post_published(self, item_id: str, confirm: bool, published_url: str = None, published_at: str = None) -> dict:
+        import os, json, tempfile, shutil
+        from datetime import datetime
+        import zoneinfo
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_idx = None
+        for idx, i in enumerate(log_data):
+            if i.get("item_id") == item_id:
+                if self._is_asset(i):
+                    raise ValueError("Assets vinculados não podem ser publicados como publicações principais.")
+                if i.get("status") not in ["scheduled", "publishing_ready"]:
+                    raise ValueError(f"Status '{i.get('status')}' não permitido para marcar como publicado.")
+                target_idx = idx
+                break
+                
+        if target_idx is None:
+            raise ValueError("Post não encontrado.")
+            
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        if published_at:
+            try:
+                datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+            except Exception:
+                raise ValueError("Formato de published_at inválido.")
+            pub_date = published_at
+        else:
+            pub_date = datetime.now(tz).isoformat()
+            
+        # Backup
+        backup_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_path = os.path.join(backup_dir, f"publication-log-{timestamp}.json")
+        shutil.copy2(log_path, backup_path)
+        
+        log_data[target_idx]["status"] = "published"
+        log_data[target_idx]["published_at"] = pub_date
+        if published_url:
+            log_data[target_idx]["published_url"] = published_url
+        log_data[target_idx]["published_by"] = "human"
+        log_data[target_idx]["publication_source"] = "manual_linkedin"
+        log_data[target_idx]["updated_at"] = datetime.now(tz).isoformat()
+        
+        fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(log_data, f, indent=4, ensure_ascii=False)
+        os.replace(temp_path, log_path)
+        
+        return {"status": "success", "message": "Post marcado como publicado."}
+
+    def undo_post_published(self, item_id: str, confirm: bool, reason: str = None) -> dict:
+        import os, json, tempfile, shutil
+        from datetime import datetime
+        import zoneinfo
+        
+        if not confirm:
+            raise ValueError("Confirmação necessária.")
+            
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        with open(log_path, "r", encoding="utf-8") as f:
+            log_data = json.load(f)
+            
+        target_idx = None
+        for idx, i in enumerate(log_data):
+            if i.get("item_id") == item_id:
+                if self._is_asset(i):
+                    raise ValueError("Assets vinculados não podem ser publicados como publicações principais.")
+                if i.get("status") != "published":
+                    raise ValueError(f"Post possui status '{i.get('status')}'. É necessário estar 'published' para desfazer.")
+                target_idx = idx
+                break
+                
+        if target_idx is None:
+            raise ValueError("Post não encontrado.")
+            
+        # Backup
+        backup_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        backup_path = os.path.join(backup_dir, f"publication-log-{timestamp}.json")
+        shutil.copy2(log_path, backup_path)
+        
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_str = datetime.now(tz).isoformat()
+        
+        item = log_data[target_idx]
+        item["status"] = "scheduled"
+        item["unpublished_at"] = now_str
+        item["unpublished_by"] = "human"
+        if reason:
+            item["unpublished_reason"] = reason
+        item["updated_at"] = now_str
+        
+        history_event = {
+            "event": "undo_published",
+            "from_status": "published",
+            "to_status": "scheduled",
+            "published_at": item.get("published_at"),
+            "published_url": item.get("published_url"),
+            "unpublished_at": now_str,
+            "unpublished_by": "human",
+            "reason": reason
+        }
+        
+        if "publication_history" not in item:
+            item["publication_history"] = []
+        item["publication_history"].append(history_event)
+        
+        fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(log_data, f, indent=4, ensure_ascii=False)
+        os.replace(temp_path, log_path)
+        
+        return {"status": "success", "message": "Marcação de publicação desfeita."}
