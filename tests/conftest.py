@@ -3,6 +3,7 @@ import json
 import pytest
 from app.core.brandos_service import BrandOSService
 from app.core.services.asset_service import AssetService
+from app.core.services.calendar_service import CalendarService
 from app.core.repositories.history_repository import HistoryRepository
 
 def setup_mock_env(base_dir):
@@ -98,3 +99,8 @@ def asset_service(mock_env):
     history_repo = HistoryRepository(base_dir=mock_env)
     assets_dir = os.path.join(mock_env, "data", "assets")
     return AssetService(assets_dir=assets_dir, history_repo=history_repo)
+
+@pytest.fixture
+def calendar_service(mock_env):
+    history_repo = HistoryRepository(base_dir=mock_env)
+    return CalendarService(history_repo=history_repo, llm_client=None)
