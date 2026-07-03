@@ -3,6 +3,7 @@ import re
 import json
 from datetime import datetime
 from app.workflows.weekly_workflow import run_weekly_workflow
+from app.core.repositories.history_repository import HistoryRepository
 
 class BrandOSService:
     def __init__(self, base_dir: str = "."):
@@ -13,6 +14,7 @@ class BrandOSService:
         self.generated_dir = os.path.join(self.base_dir, "data", "generated")
         self.assets_dir = os.path.join(self.base_dir, "data", "assets")
         os.makedirs(self.assets_dir, exist_ok=True)
+        self.history_repo = HistoryRepository(base_dir)
         self._sync_generated_to_history()
 
     def _sync_generated_to_history(self):
@@ -76,15 +78,6 @@ class BrandOSService:
             self.save_history(history)
 
 
-    def _rebuild_markdown_log(self, history):
-        md_path = os.path.join(self.registry_dir, "publication-log.md")
-        md_content = "# Publication Log\n\n| Data | Projeto | Status Geral |\n|---|---|---|\n"
-        for entry in history:
-            md_content += f"| {entry.get('date', '')} | {entry.get('project', '')} | {entry.get('status', '')} |\n"
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(md_content)
-
-
     def _recalculate_week_status(self, entry):
         """
         Calcula o status da semana com base nos seus itens.
@@ -125,21 +118,11 @@ class BrandOSService:
         return True
 
     def list_history(self):
-        json_path = os.path.join(self.registry_dir, "publication-log.json")
-        if not os.path.exists(json_path):
-            return []
-        try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
+        return self.history_repo.load()
 
     def save_history(self, history: list) -> None:
         """Salva o history no publication-log.json e reconstrói o markdown."""
-        json_path = os.path.join(self.registry_dir, "publication-log.json")
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2, ensure_ascii=False)
-        self._rebuild_markdown_log(history)
+        self.history_repo.save(history)
 
     def update_item_status(self, folder_id: str, item_id: str, new_status: str):
         """Atualiza o status de um item específico."""
