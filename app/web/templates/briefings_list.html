@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Briefings - BrandOS{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto w-full">
+    
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                <svg class="w-8 h-8 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Briefings Aprovados
+            </h1>
+            <p class="text-brandMuted mt-1">Recomendações estratégicas salvas pelo CMO Agent</p>
+        </div>
+    </div>
+
+    {% if not briefings %}
+    <div class="bg-brandSidebar border border-brandBorder rounded-xl p-12 text-center">
+        <svg class="w-12 h-12 text-brandMuted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <h3 class="text-lg font-medium text-white mb-2">Nenhum briefing salvo ainda</h3>
+        <p class="text-brandMuted max-w-md mx-auto">Vá para a Agenda Editorial, gere uma recomendação estratégica com o CMO Agent e salve como briefing.</p>
+        <a href="/calendar" class="mt-6 inline-flex items-center gap-2 bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+            Ir para Agenda Editorial
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </a>
+    </div>
+    {% else %}
+    <div class="grid gap-4">
+        {% for b in briefings %}
+        <div class="bg-brandSidebar border border-brandBorder rounded-xl p-5 hover:border-brandAccentPurple/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <h3 class="text-lg font-medium text-white">{{ b.filename }}</h3>
+                    {% if b.status == 'briefing_aprovado' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30">Aprovado</span>
+                    {% else %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">{{ b.status }}</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-4 text-sm text-brandMuted">
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Criado em: {{ b.created_at }}
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        Fonte: {{ b.source }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="/briefings/{{ b.filename }}" class="btn-secondary px-4 py-2">
+                    Abrir Briefing
+                </a>
+                <button onclick="copyToClipboard('filename-{{ loop.index }}')" class="btn-secondary px-3 py-2 flex items-center gap-2" title="Copiar Nome">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+                <div id="filename-{{ loop.index }}" class="hidden">{{ b.filename }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

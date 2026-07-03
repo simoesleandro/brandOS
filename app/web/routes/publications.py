@@ -365,3 +365,39 @@ async def delete_prompt(
     referer = request.headers.get("referer")
     return RedirectResponse(url=referer or f"/publications/{folder_id}/item/{item_id}", status_code=303)
 
+
+@router.post("/{folder_id}/item/{item_id}/schedule")
+async def update_schedule(
+    request: Request,
+    folder_id: str,
+    item_id: str,
+    channel: str = Form("linkedin"),
+    scheduled_for: str = Form(""),
+    scheduled_time: str = Form(""),
+    priority: str = Form("normal"),
+    schedule_notes: str = Form("")
+):
+    import traceback
+    try:
+        schedule_data = {
+            "channel": channel,
+            "scheduled_for": scheduled_for,
+            "scheduled_time": scheduled_time,
+            "priority": priority,
+            "schedule_notes": schedule_notes
+        }
+        print(f"[BrandOS] Salvando agendamento {folder_id} {item_id} {schedule_data}")
+        service.update_item_schedule(folder_id, item_id, schedule_data)
+        print("[BrandOS] Agendamento salvo com sucesso")
+    except Exception as e:
+        print(f"!!! ERRO FATAL AO SALVAR AGENDAMENTO [{folder_id}/{item_id}] !!!")
+        traceback.print_exc()
+        
+    referer = request.headers.get("referer")
+    base_url = referer if referer else f"/publications/{folder_id}/item/{item_id}"
+    
+    # Remove any existing msg param
+    if "?" in base_url:
+        base_url = base_url.split("?")[0]
+        
+    return RedirectResponse(url=f"{base_url}?msg=schedule_saved", status_code=303)

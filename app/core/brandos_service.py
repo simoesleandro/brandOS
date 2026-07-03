@@ -162,6 +162,101 @@ class BrandOSService:
                 json.dump(history, f, indent=2, ensure_ascii=False)
             self._rebuild_markdown_log(history)
 
+    def get_editorial_calendar(self) -> list:
+        """Retorna uma lista de peças publicáveis para a Agenda Editorial."""
+        history = self.list_history()
+        calendar_items = []
+        
+        # Palavras-chave que indicam itens auxiliares (não são posts principais)
+        ignore_keywords = [
+            "instruction", "instrucoes", "instruções", 
+            "comentario", "comentário", "comment", 
+            "prompt", "checklist", "asset"
+        ]
+        
+        for entry in history:
+            folder_id = entry.get("id")
+            project = entry.get("project", "")
+            date_prefix = entry.get("date", "")
+            
+            for item in entry.get("items", []):
+                # 1. Ignorar itens usados explicitamente como asset
+                if item.get("status") == "used_as_asset":
+                    continue
+                    
+                # 2. Ignorar itens auxiliares baseados no id, título ou arquivo
+                item_id_lower = item.get("id", "").lower()
+                title_lower = item.get("title", "").lower()
+                file_lower = item.get("file", "").lower()
+                
+                is_auxiliary = False
+                for kw in ignore_keywords:
+                    if kw in item_id_lower or kw in title_lower or kw in file_lower:
+                        is_auxiliary = True
+                        break
+                        
+                if is_auxiliary:
+                    continue
+                
+                calendar_items.append({
+                    "folder_id": folder_id,
+                    "item_id": item.get("id"),
+                    "title": item.get("title", ""),
+                    "project": project,
+                    "type": item.get("type", ""),
+                    "status": item.get("status", "draft"),
+                    "scheduled_for": item.get("scheduled_for", ""),
+                    "scheduled_time": item.get("scheduled_time", ""),
+                    "published_at": item.get("published_at", ""),
+                    "channel": item.get("channel", "linkedin"),
+                    "priority": item.get("priority", "normal"),
+                    "entry_date": date_prefix,
+                    "url": f"/publications/{folder_id}/item/{item.get('id')}"
+                })
+        
+        def sort_key(item):
+            # Prioritize scheduled_for, then published_at, then entry_date
+            date_key = item["scheduled_for"] or item["published_at"] or item["entry_date"]
+            return date_key
+            
+        # Reverse sorting by date (newest first, or we can sort oldest first)
+        # Usually editorial calendars want to see future stuff first or in chronological order.
+        # We will sort descending for now, or ascending. Let's do descending.
+        calendar_items.sort(key=lambda x: sort_key(x), reverse=True)
+        return calendar_items
+
+    def update_item_schedule(self, folder_id: str, item_id: str, schedule_data: dict):
+        """Atualiza os dados de agendamento de uma peça."""
+        history = self.list_history()
+        date_prefix = folder_id[:10]
+        json_path = os.path.join(self.registry_dir, "publication-log.json")
+        
+        updated = False
+        for entry in history:
+            if entry.get("date") == date_prefix or entry.get("id") == folder_id:
+                for item in entry.get("items", []):
+                    if item.get("id") == item_id:
+                        if "scheduled_for" in schedule_data:
+                            item["scheduled_for"] = schedule_data["scheduled_for"]
+                        if "scheduled_time" in schedule_data:
+                            item["scheduled_time"] = schedule_data["scheduled_time"]
+                        if "channel" in schedule_data:
+                            item["channel"] = schedule_data["channel"]
+                        if "priority" in schedule_data:
+                            item["priority"] = schedule_data["priority"]
+                        if "schedule_notes" in schedule_data:
+                            item["schedule_notes"] = schedule_data["schedule_notes"]
+                        updated = True
+                        break
+                if updated:
+                    break
+                    
+        if updated:
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(history, f, indent=2, ensure_ascii=False)
+        else:
+            print(f"[BrandOS] Item não encontrado para agendamento {folder_id} {item_id}")
+
     def add_metrics_snapshot(self, folder_id: str, item_id: str, snapshot_data: dict):
         history = self.list_history()
         date_prefix = folder_id[:10]
@@ -348,6 +443,27 @@ class BrandOSService:
         
         # Injeta o conteúdo dos arquivos no item temporariamente para a view
         for item in entry.get("items", []):
+            # Classificação rigorosa conforme regras de negócios
+            is_linked_asset = False
+            if item.get("status") == "used_as_asset":
+                is_linked_asset = True
+            elif item.get("linked_to_item_id"):
+                is_linked_asset = True
+            elif item.get("asset_role"):
+                is_linked_asset = True
+                
+            is_main_publication = False
+            if not is_linked_asset:
+                item_type = item.get("type", "")
+                if item_type in ["linkedin_post", "post", "article", "video"]:
+                    is_main_publication = True
+                elif item_type == "carousel":
+                    if item.get("status") != "used_as_asset" and not item.get("linked_to_item_id"):
+                        is_main_publication = True
+                        
+            item["is_main_publication"] = is_main_publication
+            item["is_scheduled"] = bool(item.get("scheduled_for")) and item.get("status") != "published"
+            
             file_path = os.path.join(folder_path, item.get("file", ""))
             try:
                 item["file_exists"] = os.path.exists(file_path)
@@ -904,3 +1020,567 @@ Diferenças calculadas:
         found_metrics["source_filename"] = original_filename
         
         return found_metrics
+    def generate_cmo_recommendation(self):
+        """
+        Carrega contexto histórico, agenda e telemetria,
+        aciona o LLM (CMO Agent) e salva a recomendação.
+        """
+        print("[CMO] Chamando BrandOSService.generate_cmo_recommendation()")
+        
+        from app.config import config
+        print(f"[CMO] GEMINI_API_KEY configurada: {bool(config.API_KEY)}")
+
+        try:
+            from app.core.llm_client import LLMClient
+            print("[CMO] Instanciando LLMClient")
+            llm = LLMClient()
+        except ValueError as e:
+            print("[CMO][ERROR]", repr(e))
+            raise Exception("gemini_api_key_missing")
+        except Exception as e:
+            print("[CMO][ERROR]", repr(e))
+            raise Exception("gemini_client_error")
+            
+        import datetime
+        now = datetime.datetime.now()
+        
+        # 1. Carregar Publication Log (Agenda e Histórico)
+        print("[CMO] Carregando publication-log.json")
+        try:
+            history = self.list_history()
+        except Exception as e:
+            print("[CMO][ERROR]", repr(e))
+            raise Exception("context_build_error")
+            
+        print("[CMO] Montando contexto")
+        # Resumir contexto do histórico para não exceder limites absurdos
+        # Vamos pegar as últimas 4 semanas geradas
+        recent_history = history[-4:] if len(history) > 4 else history
+        
+        context_str = f"Data atual do sistema: {now.strftime('%Y-%m-%d %H:%M')}\n\n"
+        context_str += "=== HISTÓRICO RECENTE DE SEMANAS (AGENDA E STATUS) ===\n"
+        for week in recent_history:
+            context_str += f"- Semana: {week.get('date', '')} | Projeto: {week.get('project', '')} | Tema: {week.get('theme', '')}\n"
+            for item in week.get("items", []):
+                # Ignorar peças auxiliares para o CMO
+                is_linked_asset = False
+                if item.get("status") == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
+                    is_linked_asset = True
+                
+                is_main_publication = False
+                if not is_linked_asset:
+                    item_type = item.get("type", "")
+                    if item_type in ["linkedin_post", "post", "article", "video"]:
+                        is_main_publication = True
+                    elif item_type == "carousel":
+                        if item.get("status") != "used_as_asset" and not item.get("linked_to_item_id"):
+                            is_main_publication = True
+                            
+                if is_main_publication:
+                    status = item.get("status", "draft")
+                    metrics = item.get("metrics", {}).get("latest", {})
+                    scheduled_for = item.get("scheduled_for", "Sem data")
+                    context_str += f"  - Peça principal: {item.get('title')} | Status: {status} | Data: {scheduled_for}\n"
+                    if metrics:
+                        impressions = metrics.get('impressions', 0)
+                        engagements = metrics.get('total_engagements', 0)
+                        context_str += f"    Métricas recentes: {impressions} impressões, {engagements} engajamentos\n"
+        
+        # 2. Carregar arquivos de knowledge se existirem
+        print("[CMO] Carregando knowledge files")
+        def load_knowledge_file(filename):
+            path = os.path.join(self.knowledge_dir, filename)
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        return f.read()
+                except Exception as e:
+                    print(f"[CMO][ERROR] Falha ao ler {filename}:", repr(e))
+            return ""
+
+        context_str += "\n=== PROJETOS CONHECIDOS ===\n"
+        context_str += load_knowledge_file("projetos.md")
+        
+        context_str += "\n=== REGRAS EDITORIAIS ===\n"
+        context_str += load_knowledge_file("regras-editoriais-por-projeto.md")
+        
+        context_str += "\n=== HISTÓRICO DE POSTAGENS ===\n"
+        context_str += load_knowledge_file("historico-postagens.md")
+        
+        context_str += "\n=== CONTINUIDADE DE CONTEÚDO ===\n"
+        context_str += load_knowledge_file("continuidade-conteudo.md")
+
+        system_prompt = """Você é o CMO Agent do BrandOS, um sistema operacional editorial para marca pessoal.
+
+Sua função é recomendar a próxima semana editorial com base no histórico real do usuário.
+
+Regras:
+- Não invente métricas.
+- Não invente projetos.
+- Não recomende repetir o mesmo tema se o histórico indicar saturação. Cuidado especial com a repetição do projeto "Sentinela RJ" ou o projeto mais recente: avalie se vale continuar ou alternar, e justifique.
+- Antes de recomendar a próxima semana, verifique se existem publicações principais pendentes, em rascunho ou agendadas na semana atual. Se existirem, mencione isso no diagnóstico e recomende concluir ou reagendar essas peças antes de executar o novo plano.
+- Leitura de telemetria: Diferencie baixo alcance/volume de engajamento proporcional. Se o alcance for baixo mas o engajamento for bom, diga que é um "sinal inicial positivo" de uma "amostra pequena". Não chame de "baixa telemetria" ou "fracasso" quando a taxa proporcional for boa.
+- Mantenha prudência com poucos dados: use termos como "sinal inicial", "amostra pequena", "ainda não permite conclusão forte", "indício". Evite palavras como "sucesso", "fracasso" ou "alta performance" com amostras pequenas.
+- Priorize consistência, aprendizado público e construção de autoridade.
+- O usuário publica principalmente no LinkedIn.
+- O tom deve ser profissional, direto e estratégico.
+- Não escrever posts completos nesta etapa.
+- Gerar apenas recomendação estratégica.
+
+Responda em português brasileiro com esta exata estrutura:
+
+# Recomendação CMO Agent — Próxima Semana
+
+## 1. Diagnóstico atual
+
+## 2. Projeto recomendado
+
+## 3. Tema central sugerido
+
+## 4. Justificativa estratégica
+
+## 5. Risco de repetição ou saturação
+
+## 6. Grade sugerida da semana
+Segunda: 
+Quarta: 
+Sexta: 
+
+## 7. Próxima ação recomendada"""
+
+        user_prompt = f"Aqui está o contexto do histórico de conteúdo e telemetria atual:\n\n{context_str}\n\nGere a recomendação para a próxima semana."
+        
+        try:
+            print("[CMO] Chamando Gemini")
+            recommendation_text = llm.generate_content(system_prompt, user_prompt)
+            print("[CMO] Resposta recebida")
+        except Exception as e:
+            print("[CMO][ERROR]", repr(e))
+            raise Exception("gemini_generation_error")
+            
+        try:
+            print("[CMO] Salvando recomendação")
+            # Salvar no histórico
+            cmo_dir = os.path.join(self.base_dir, "data", "generated", "cmo-recommendations")
+            os.makedirs(cmo_dir, exist_ok=True)
+            
+            filename = now.strftime("%Y-%m-%d-%H%M-cmo-next-week.md")
+            file_path = os.path.join(cmo_dir, filename)
+            
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(f"Data: {now.strftime('%Y-%m-%d %H:%M')}\nFonte: BrandOS\n\n{recommendation_text}")
+        except Exception as e:
+            print("[CMO][ERROR]", repr(e))
+            raise Exception("save_file_error")
+                
+        return recommendation_text
+    def save_cmo_recommendation_as_briefing(self, recommendation_text: str) -> str:
+        """
+        Salva a recomendação gerada pelo CMO Agent como um briefing estruturado
+        em data/generated/briefings.
+        """
+        if not recommendation_text or not recommendation_text.strip():
+            raise ValueError("Nenhuma recomendação disponível para salvar como briefing.")
+            
+        import datetime
+        now = datetime.datetime.now()
+        
+        briefings_dir = os.path.join(self.base_dir, "data", "generated", "briefings")
+        os.makedirs(briefings_dir, exist_ok=True)
+        
+        filename = now.strftime("%Y-%m-%d-%H%M-next-week-briefing.md")
+        file_path = os.path.join(briefings_dir, filename)
+        
+        content = f"""# Briefing Editorial — Próxima Semana
+
+Data de criação: {now.strftime('%Y-%m-%d %H:%M')}  
+Fonte: CMO Agent  
+Status: briefing_aprovado  
+
+---
+
+{recommendation_text.strip()}
+"""
+        
+        try:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+        except Exception as e:
+            print(f"[CMO][ERROR] Falha ao salvar briefing: {repr(e)}")
+            raise ValueError("Não foi possível salvar o briefing.")
+            
+        # Retornar caminho relativo amigável
+        return f"data/generated/briefings/{filename}"
+
+    def list_briefings(self) -> list:
+        """
+        Lê a pasta data/generated/briefings/ e retorna os briefings ordenados (mais recentes primeiro),
+        extraindo metadados básicos do cabeçalho.
+        """
+        briefings_dir = os.path.join(self.base_dir, "data", "generated", "briefings")
+        if not os.path.exists(briefings_dir):
+            return []
+            
+        briefings = []
+        for filename in os.listdir(briefings_dir):
+            if filename.endswith(".md"):
+                file_path = os.path.join(briefings_dir, filename)
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                    
+                    created_at = "Desconhecido"
+                    source = "Desconhecida"
+                    status = "Desconhecido"
+                    
+                    for line in lines[:10]:
+                        if line.startswith("Data de criação:"):
+                            created_at = line.replace("Data de criação:", "").strip()
+                        elif line.startswith("Fonte:"):
+                            source = line.replace("Fonte:", "").strip()
+                        elif line.startswith("Status:"):
+                            status = line.replace("Status:", "").strip()
+                            
+                    sort_key = filename
+                    
+                    briefings.append({
+                        "filename": filename,
+                        "created_at": created_at,
+                        "source": source,
+                        "status": status,
+                        "sort_key": sort_key
+                    })
+                except Exception as e:
+                    print(f"Erro ao ler briefing {filename}: {e}")
+                    
+        briefings.sort(key=lambda x: x["sort_key"], reverse=True)
+        return briefings
+
+    def read_briefing(self, filename: str) -> str:
+        """
+        Lê e retorna o conteúdo completo de um briefing, prevenindo path traversal.
+        """
+        import os
+        filename = os.path.basename(filename) # Impede path traversal
+        file_path = os.path.join(self.base_dir, "data", "generated", "briefings", filename)
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError("Briefing não encontrado.")
+            
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    def prepare_week_from_briefing(self, filename: str) -> dict:
+        """
+        Lê o briefing e extrai os defaults para o modal de geração da semana.
+        Na Fase 1, usaremos valores fallback sugeridos pelo usuário.
+        """
+        content = self.read_briefing(filename)
+        
+        from datetime import datetime, timedelta
+        hoje = datetime.now()
+        dias_para_segunda = 0 - hoje.weekday()
+        if dias_para_segunda <= 0:
+            dias_para_segunda += 7
+        proxima_segunda = (hoje + timedelta(days=dias_para_segunda)).strftime("%Y-%m-%d")
+
+        return {
+            "projeto": "Sentinela RJ",
+            "tema_central": "Bastidores da Coleta e Normalização de Dados do PNCP",
+            "canal": "LinkedIn",
+            "quantidade_posts": 3,
+            "frequencia": "Segunda / Quarta / Sexta",
+            "data_inicial": proxima_segunda
+        }
+
+
+
+    def generate_week_from_briefing(self, filename: str, options: dict) -> dict:
+        """
+        Gera a semana editorial usando o Gemini com base no briefing e nas opções do modal.
+        """
+        briefing_content = self.read_briefing(filename)
+
+        import re
+        import datetime
+        
+        # 1. Validate briefing status
+        if not re.search(r'^\s*Status:\s*briefing_aprovado\s*$', briefing_content, re.IGNORECASE | re.MULTILINE):
+            raise ValueError("Este briefing ainda não está aprovado para geração de semana editorial.")
+            
+        # 2. Validate date format (YYYY-MM-DD)
+        data_inicial_str = options.get('start_date', '')
+        try:
+            dt = datetime.datetime.strptime(data_inicial_str, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("Data inicial inválida. Use o formato YYYY-MM-DD.")
+
+        # 3. Idempotency Check BEFORE Gemini
+        import json
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        log_data = {}
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    log_data = json.load(f)
+            except Exception:
+                pass
+                
+        if "items" in log_data:
+            existing = [item for item in log_data["items"] if item.get("source") == "generated_from_briefing" and item.get("briefing_file") == filename and item.get("planned_week_start") == data_inicial_str]
+            has_seg = any(i.get("planned_day") == "segunda" for i in existing)
+            has_qua = any(i.get("planned_day") == "quarta" for i in existing)
+            has_sex = any(i.get("planned_day") == "sexta" for i in existing)
+            
+            if has_seg and has_qua and has_sex:
+                # Retornar sucesso diretamente
+                generated_folder = next((i.get("file", "").split("/")[1] for i in existing if "file" in i and i["file"].startswith("generated/")), "pasta_desconhecida")
+                return {"status": "success", "folder": generated_folder, "message": "A semana editorial já havia sido gerada."}
+        
+        prompt = f'''Você é o Content Strategist e Copywriter do BrandOS.
+Gere uma semana editorial a partir do briefing aprovado abaixo.
+
+Regras:
+- Não ignorar o briefing.
+- Não repetir literalmente a recomendação do CMO.
+- Transformar a estratégia em posts reais para LinkedIn.
+- Manter tom profissional, humano e direto.
+- Evitar cara de IA.
+- Não inventar resultados do projeto.
+- Não fazer acusações.
+- No Sentinela RJ, preservar sempre a regra: anomalia não é acusação.
+- Criar 3 posts: segunda, quarta e sexta.
+- Cada post deve ter gancho, corpo e fechamento.
+- Não pedir engajamento de forma artificial.
+- Links GitHub/demo devem ficar no primeiro comentário ou instruções, não no corpo do post.
+- Gerar também instruções de publicação separadas.
+- Gerar conteúdo em português brasileiro.
+
+Briefing aprovado:
+{briefing_content}
+
+Opções da geração:
+Projeto: {options.get('projeto', 'Sentinela RJ')}
+Tema: {options.get('tema_central')}
+Data Inicial: {options.get('data_inicial')}
+Frequência: {options.get('frequencia')}
+
+Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use '## ' para cabeçalhos):
+
+## PLANO EDITORIAL
+...
+
+## POST SEGUNDA
+...
+
+## POST QUARTA
+...
+
+## POST SEXTA
+...
+
+## INSTRUÇÕES DE PUBLICAÇÃO
+...
+
+## PROMPTS VISUAIS
+...
+'''
+        
+        print("[CMO] Chamando Gemini para gerar semana...")
+        self.llm.connect()
+        try:
+            response_text = self.llm.generate_text(prompt)
+        except Exception as e:
+            print(f"[CMO] Erro na geração: {e}")
+            raise Exception("Erro ao gerar semana com IA.")
+            
+        print("[CMO] Geração concluída. Fazendo parse dos blocos.")
+        
+        # Parse blocks
+        blocks = {
+            "PLANO EDITORIAL": "",
+            "POST SEGUNDA": "",
+            "POST QUARTA": "",
+            "POST SEXTA": "",
+            "INSTRUÇÕES DE PUBLICAÇÃO": "",
+            "PROMPTS VISUAIS": ""
+        }
+        
+        import re
+        # Find all blocks starting with ## 
+        pattern = re.compile(r'##\s+([^\n]+)\n(.*?)(?=\n##\s+|$)', re.DOTALL)
+        matches = pattern.findall(response_text)
+        
+        parsed_correctly = False
+        if len(matches) > 0:
+            parsed_correctly = True
+            for title, body in matches:
+                title = title.strip().upper()
+                if title in blocks:
+                    blocks[title] = body.strip()
+                elif "PLANO" in title:
+                    blocks["PLANO EDITORIAL"] = body.strip()
+                elif "SEGUNDA" in title:
+                    blocks["POST SEGUNDA"] = body.strip()
+                elif "QUARTA" in title:
+                    blocks["POST QUARTA"] = body.strip()
+                elif "SEXTA" in title:
+                    blocks["POST SEXTA"] = body.strip()
+                elif "INSTRU" in title:
+                    blocks["INSTRUÇÕES DE PUBLICAÇÃO"] = body.strip()
+                elif "PROMPT" in title:
+                    blocks["PROMPTS VISUAIS"] = body.strip()
+        
+        # Check if basic posts were extracted
+        if not blocks["POST SEGUNDA"] or not blocks["POST QUARTA"] or not blocks["POST SEXTA"]:
+            parsed_correctly = False
+            
+        import uuid
+        import datetime
+        from slugify import slugify
+        
+        now = datetime.datetime.now()
+        timestamp = now.strftime("%H%M")
+        data_inicial = data_inicial_str
+        slug = slugify(options.get('project_slug', 'projeto'))
+        
+        folder_name = f"{data_inicial}-semana-{slug}-{timestamp}"
+        folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
+        
+        if os.path.exists(folder_path):
+            folder_name = f"{data_inicial}-semana-{slug}-{timestamp}-{uuid.uuid4().hex[:4]}"
+            folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
+            
+        os.makedirs(folder_path, exist_ok=True)
+        
+        print(f"[CMO] Salvando arquivos em {folder_path}...")
+        
+        if not parsed_correctly:
+            # Fallback
+            with open(os.path.join(folder_path, "01-briefing.md"), "w", encoding="utf-8") as f:
+                f.write(briefing_content)
+            with open(os.path.join(folder_path, "02-plano-editorial.md"), "w", encoding="utf-8") as f:
+                f.write(response_text)
+            
+            warning = "Conteúdo não separado corretamente pela IA. Revisar geração."
+            for idx, name in enumerate(["03-post-segunda.md", "04-post-quarta.md", "05-post-sexta.md", "06-instrucoes-publicacao.md", "07-prompts-visuais.md"]):
+                with open(os.path.join(folder_path, name), "w", encoding="utf-8") as f:
+                    f.write(warning)
+        else:
+            with open(os.path.join(folder_path, "01-briefing.md"), "w", encoding="utf-8") as f:
+                f.write(briefing_content)
+            with open(os.path.join(folder_path, "02-plano-editorial.md"), "w", encoding="utf-8") as f:
+                f.write(blocks["PLANO EDITORIAL"])
+            with open(os.path.join(folder_path, "03-post-segunda.md"), "w", encoding="utf-8") as f:
+                f.write(blocks["POST SEGUNDA"])
+            with open(os.path.join(folder_path, "04-post-quarta.md"), "w", encoding="utf-8") as f:
+                f.write(blocks["POST QUARTA"])
+            with open(os.path.join(folder_path, "05-post-sexta.md"), "w", encoding="utf-8") as f:
+                f.write(blocks["POST SEXTA"])
+            with open(os.path.join(folder_path, "06-instrucoes-publicacao.md"), "w", encoding="utf-8") as f:
+                f.write(blocks["INSTRUÇÕES DE PUBLICAÇÃO"])
+            
+            prompts = blocks["PROMPTS VISUAIS"]
+            if not prompts or len(prompts) < 10:
+                prompts = "Prompts visuais pendentes de geração."
+            with open(os.path.join(folder_path, "07-prompts-visuais.md"), "w", encoding="utf-8") as f:
+                f.write(prompts)
+                
+        # Atualizar publication-log.json
+        print("[CMO] Atualizando publication-log.json...")
+        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
+        import json
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", encoding="utf-8") as f:
+                    log_data = json.load(f)
+            except Exception as e:
+                print(f"[CMO] Erro ao carregar publication-log.json: {e}")
+                log_data = {}
+        else:
+            log_data = {}
+            
+        if "items" not in log_data:
+            log_data["items"] = []
+            
+        # Helper to parse initial date and add days for suggested_for
+        from datetime import datetime, timedelta
+        dt = datetime.strptime(data_inicial_str, "%Y-%m-%d")
+            
+        data_seg = dt.strftime("%Y-%m-%d")
+        data_qua = (dt + timedelta(days=2)).strftime("%Y-%m-%d")
+        data_sex = (dt + timedelta(days=4)).strftime("%Y-%m-%d")
+        
+        # Adicionar apenas posts principais
+        new_items = [
+            {
+                "item_id": f"post-segunda-{timestamp}",
+                "title": "Post segunda",
+                "type": "linkedin_post",
+                "status": "generated",
+                "file": f"generated/{folder_name}/03-post-segunda.md",
+                "project": options.get('project_slug', 'Sentinela RJ'),
+                "created_at": now.isoformat(),
+                "suggested_for": data_seg,
+                "source": "generated_from_briefing",
+                "briefing_file": filename,
+                "planned_week_start": data_inicial_str,
+                "planned_day": "segunda"
+            },
+            {
+                "item_id": f"post-quarta-{timestamp}",
+                "title": "Post quarta",
+                "type": "linkedin_post",
+                "status": "generated",
+                "file": f"generated/{folder_name}/04-post-quarta.md",
+                "project": options.get('project_slug', 'Sentinela RJ'),
+                "created_at": now.isoformat(),
+                "suggested_for": data_qua,
+                "source": "generated_from_briefing",
+                "briefing_file": filename,
+                "planned_week_start": data_inicial_str,
+                "planned_day": "quarta"
+            },
+            {
+                "item_id": f"post-sexta-{timestamp}",
+                "title": "Post sexta",
+                "type": "linkedin_post",
+                "status": "generated",
+                "file": f"generated/{folder_name}/05-post-sexta.md",
+                "project": options.get('project_slug', 'Sentinela RJ'),
+                "created_at": now.isoformat(),
+                "suggested_for": data_sex,
+                "source": "generated_from_briefing",
+                "briefing_file": filename,
+                "planned_week_start": data_inicial_str,
+                "planned_day": "sexta"
+            }
+        ]
+        
+        log_data["items"].extend(new_items)
+        
+        import shutil
+        backup_dir = os.path.join(self.base_dir, "data", "registry", "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        backup_file = os.path.join(backup_dir, f"publication-log-{now.strftime('%Y%m%d-%H%M%S')}.json")
+        
+        if os.path.exists(log_path):
+            try:
+                shutil.copy2(log_path, backup_file)
+            except Exception as e:
+                raise Exception(f"Erro ao criar backup do publication-log.json: {e}")
+                
+        # Safe writing via temporary file
+        import tempfile
+        temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
+        try:
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, log_path)
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise Exception(f"Erro ao salvar publication-log.json de forma segura: {e}")
+            
+        print("[CMO] Semana gerada com sucesso.")
+        return {"status": "success", "folder": folder_name}

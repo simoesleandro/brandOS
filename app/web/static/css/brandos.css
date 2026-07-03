@@ -268,3 +268,16 @@ body {
   color: var(--text-primary);
   border-color: rgba(255, 255, 255, 0.2);
 }
+
+/* Briefing Markdown Styles */
+.briefing-markdown { color: #e2e8f0; line-height: 1.75; max-width: 75ch; }
+.briefing-markdown h1 { font-size: 2.25rem; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem; }
+.briefing-markdown h2 { font-size: 1.5rem; font-weight: 600; color: var(--accent-purple); margin-top: 2rem; margin-bottom: 1rem; }
+.briefing-markdown h3 { font-size: 1.25rem; font-weight: 600; color: #ffffff; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+.briefing-markdown p { margin-top: 0; margin-bottom: 1.25rem; }
+.briefing-markdown ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.briefing-markdown ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.25rem; }
+.briefing-markdown li { margin-bottom: 0.5rem; }
+.briefing-markdown strong { color: #ffffff; font-weight: 600; }
+.briefing-markdown hr { border-color: var(--border-light); margin-top: 2rem; margin-bottom: 2rem; }
+.briefing-markdown code { background-color: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.875em; color: #a5b4fc; }

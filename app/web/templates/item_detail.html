@@ -372,11 +372,135 @@
     </form>
 
 <!-- TAB: PUBLICACAO -->
-<div id="tab-publicacao" class="tab-content hidden">
-    <div class="cockpit-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
-        <svg class="w-12 h-12 text-brandMuted mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-        <h3 class="text-xl font-bold text-white mb-2">Módulo de Deploy (Fase 2)</h3>
-        <p class="text-sm text-brandSecondary max-w-md mx-auto">Em breve: integração direta via API com as redes sociais.</p>
+<div id="tab-publicacao" class="tab-content hidden space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Coluna 1: Dados de Publicação Real -->
+        <div class="cockpit-card p-6 border-t-2 border-brandAccentCyan bg-[#020205]">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-brandAccentCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Publicação Real
+            </h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Status Atual</label>
+                    <div class="py-2">
+                        {% if item.status == 'published' %}
+                            <span class="badge badge-published px-3 py-1">Publicado</span>
+                        {% elif item.status == 'ready_to_publish' %}
+                            <span class="badge badge-ready_to_publish px-3 py-1">Pronto</span>
+                        {% elif item.status == 'needs_revision' %}
+                            <span class="badge badge-needs_revision px-3 py-1">Revisar</span>
+                        {% elif item.status == 'skipped' %}
+                            <span class="badge badge-skipped px-3 py-1">Ignorado</span>
+                        {% elif item.status == 'generated' %}
+                            <span class="badge badge-generated px-3 py-1">Gerado</span>
+                        {% else %}
+                            <span class="badge badge-draft px-3 py-1">Rascunho</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Data de Publicação</label>
+                    <p class="text-white font-mono bg-brandBg/50 px-3 py-2 border border-brandBorder/30 rounded">{{ item.published_at if item.published_at else 'Não publicada' }}</p>
+                </div>
+                
+                {% if item.metrics and item.metrics.latest and item.metrics.latest.linkedin_url %}
+                <div>
+                    <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Link (LinkedIn)</label>
+                    <a href="{{ item.metrics.latest.linkedin_url }}" target="_blank" class="text-brandAccent hover:underline break-all text-sm">{{ item.metrics.latest.linkedin_url }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Coluna 2: Agendamento -->
+        <div class="cockpit-card p-6 border-t-2 border-brandAccentPurple bg-[#020205]">
+            <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <svg class="w-5 h-5 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Agendamento
+            </h3>
+            
+            <form action="/publications/{{ folder_id }}/item/{{ item.id }}/schedule" method="POST" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Data Prevista</label>
+                        <input type="date" name="scheduled_for" value="{{ item.scheduled_for | default('') }}" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark] font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Horário Previsto</label>
+                        <input type="time" name="scheduled_time" value="{{ item.scheduled_time | default('') }}" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark] font-mono">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Canal</label>
+                        <select name="channel" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark]">
+                            <option value="linkedin" {% if item.channel == 'linkedin' or not item.channel %}selected{% endif %}>LinkedIn</option>
+                            <option value="instagram" {% if item.channel == 'instagram' %}selected{% endif %}>Instagram</option>
+                            <option value="blog" {% if item.channel == 'blog' %}selected{% endif %}>Blog</option>
+                            <option value="newsletter" {% if item.channel == 'newsletter' %}selected{% endif %}>Newsletter</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Prioridade</label>
+                        <select name="priority" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors [color-scheme:dark]">
+                            <option value="baixa" {% if item.priority == 'baixa' or item.priority == 'low' %}selected{% endif %}>Baixa</option>
+                            <option value="normal" {% if item.priority == 'normal' or not item.priority %}selected{% endif %}>Normal</option>
+                            <option value="alta" {% if item.priority == 'alta' or item.priority == 'high' %}selected{% endif %}>Alta</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-brandMuted uppercase tracking-widest mb-1">Observações</label>
+                    <textarea name="schedule_notes" rows="3" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors placeholder:text-brandMuted/30" placeholder="Instruções para quem for publicar...">{{ item.schedule_notes | default('') }}</textarea>
+                </div>
+                
+                <div class="pt-2 text-right">
+                    <button type="submit" class="btn btn-primary px-6 py-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+                        SALVAR AGENDAMENTO
+                    </button>
+                </div>
+            </form>
+            
+            <div id="schedule-toast" class="hidden mt-4 bg-status-green/20 border border-status-green/50 text-status-green px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Agendamento salvo com sucesso.
+            </div>
+            
+            <script>
+                // Mostra o toast se houver msg=schedule_saved na URL
+                document.addEventListener('DOMContentLoaded', function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('msg') === 'schedule_saved') {
+                        // Ativa a aba "Publicação" automaticamente ao invés da padrão
+                        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+                        
+                        const tabPublicacao = document.getElementById('tab-publicacao');
+                        const btnPublicacao = document.querySelector('button[onclick*="tab-publicacao"]');
+                        
+                        if(tabPublicacao) tabPublicacao.classList.remove('hidden');
+                        if(btnPublicacao) btnPublicacao.classList.add('active');
+                        
+                        // Mostra a notificação
+                        const toast = document.getElementById('schedule-toast');
+                        if (toast) {
+                            toast.classList.remove('hidden');
+                            setTimeout(() => {
+                                toast.classList.add('hidden');
+                                // Limpa a URL sem recarregar
+                                const cleanUrl = window.location.pathname;
+                                window.history.replaceState({}, document.title, cleanUrl);
+                            }, 5000);
+                        }
+                    }
+                });
+            </script>
+        </div>
     </div>
 </div>
 

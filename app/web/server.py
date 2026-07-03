@@ -21,7 +21,7 @@ os.makedirs(os.path.join(STATIC_DIR, "css"), exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Importa as rotas
-from app.web.routes import dashboard, generations, publications, projects, history, settings
+from app.web.routes import dashboard, generations, publications, projects, history, settings, calendar, briefings
 
 # Registra os roteadores
 app.include_router(dashboard.router)
@@ -30,6 +30,8 @@ app.include_router(publications.router)
 app.include_router(projects.router)
 app.include_router(history.router)
 app.include_router(settings.router)
+app.include_router(calendar.router)
+app.include_router(briefings.router)
 
 
 @app.get("/assets/{folder_id}/{item_id}/{category}/{filename}")

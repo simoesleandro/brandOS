@@ -31,29 +31,49 @@
 {% else %}
 
 <!-- Resumo da Semana (Cockpit metrics) -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
     {% set existing_items = details["items"] | selectattr("file_exists", "equalto", true) | list %}
-    {% set missing_items = details["items"] | selectattr("file_exists", "equalto", false) | list %}
-    {% set total_items = existing_items | length %}
-    {% set pub_items = existing_items | selectattr("status", "equalto", "published") | list | length %}
-    {% set pend_items = total_items - pub_items %}
+    {% set main_items = existing_items | selectattr("is_main_publication", "equalto", true) | list %}
+    {% set aux_items = existing_items | selectattr("is_main_publication", "equalto", false) | list %}
+    {% set pub_items = main_items | selectattr("status", "equalto", "published") | list %}
+    {% set scheduled_items = main_items | selectattr("is_scheduled", "equalto", true) | list %}
+    
+    {% set total_main = main_items | length %}
+    {% set count_pub = pub_items | length %}
+    {% set count_scheduled = scheduled_items | length %}
+    {% set count_pend = total_main - count_pub %}
+    {% set count_aux = aux_items | length %}
     
     <div class="cockpit-card metric-card metric-blue p-5 group">
         <svg class="metric-icon-bg text-brandAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono font-bold mb-2 z-10">TOTAL_ITENS</p>
-        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ total_items }}</p>
+        <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono font-bold mb-2 z-10">PUBLICÁVEIS</p>
+        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ total_main }}</p>
     </div>
     
     <div class="cockpit-card metric-card metric-green p-5 group">
         <svg class="metric-icon-bg text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-        <p class="text-[10px] text-green-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">DEPLOYED</p>
-        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ pub_items }}</p>
+        <p class="text-[10px] text-green-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">PUBLICADAS</p>
+        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_pub }}</p>
     </div>
 
     <div class="cockpit-card metric-card metric-amber p-5 group">
         <svg class="metric-icon-bg text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <p class="text-[10px] text-yellow-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">PENDING</p>
-        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ pend_items }}</p>
+        <p class="text-[10px] text-yellow-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">PENDENTES</p>
+        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_pend }}</p>
+    </div>
+    
+    <div class="cockpit-card metric-card metric-cyan p-5 group relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <svg class="metric-icon-bg text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <p class="text-[10px] text-cyan-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">AGENDADAS</p>
+        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_scheduled }}</p>
+    </div>
+    
+    <div class="cockpit-card metric-card metric-purple p-5 group relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <svg class="metric-icon-bg text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+        <p class="text-[10px] text-brandAccentPurple/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">ASSETS VINCULADOS</p>
+        <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_aux }}</p>
     </div>
 </div>
 
@@ -79,38 +99,58 @@
                     <td class="text-brandSecondary text-xs py-4 px-5"><span class="bg-brandBg px-2 py-0.5 rounded border border-brandBorder/50">{{ item.type }}</span></td>
                     <td class="text-brandMuted font-mono text-xs py-4 px-5">{{ item.file }}</td>
                     <td class="py-4 px-5">
+                        {% if item.status != 'used_as_asset' %}
                         <span class="badge badge-{{ item.status }}">{{ item.status | translate_status }}</span>
+                        {% endif %}
+                        {% if item.is_scheduled %}
+                        <span class="badge badge-scheduled ml-2 bg-cyan-500/20 text-cyan-500 border border-cyan-500/30">AGENDADO</span>
+                        {% endif %}
+                        {% if not item.is_main_publication %}
+                        <span class="badge badge-asset {% if item.status != 'used_as_asset' %}ml-2{% endif %} bg-purple-500/20 text-purple-400 border border-purple-500/30">ASSET VINCULADO</span>
+                        {% endif %}
+                        
+                        {% if item.is_scheduled %}
+                        <div class="text-[10px] text-brandMuted mt-1">
+                            {{ item.scheduled_for[8:10] }}/{{ item.scheduled_for[5:7] }}/{{ item.scheduled_for[0:4] }} às {{ item.scheduled_time }}
+                            {% if item.channel %} | {{ item.channel | title }}{% endif %}
+                        </div>
+                        {% endif %}
                     </td>
                     <td class="text-right py-4 px-5 flex items-center justify-end gap-2 flex-wrap min-w-[200px]">
-                        <!-- Copiar Direto -->
-                        <div id="raw-{{ item.id }}" class="hidden">{{ item.content }}</div>
-                        <button onclick="copyToClipboard('raw-{{ item.id }}')" class="btn btn-ghost border-brandBorder/30 text-brandMuted hover:text-white px-3 py-1.5 text-[10px]" title="Copiar Texto Bruto">
-                            COPIAR
-                        </button>
-                        
-                        <!-- Ações Rápidas de Status -->
-                        {% if item.status != 'ready_to_publish' and item.status != 'published' %}
-                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=ready_to_publish" method="POST" class="inline">
-                            <button type="submit" class="btn btn-ghost hover:bg-yellow-500/10 border-brandBorder/30 hover:border-yellow-500/30 text-brandMuted hover:text-status-amber px-3 py-1.5 text-[10px]">PRONTO</button>
-                        </form>
+                        {% if item.is_main_publication %}
+                            <!-- Copiar Direto -->
+                            <div id="raw-{{ item.id }}" class="hidden">{{ item.content }}</div>
+                            <button onclick="copyToClipboard('raw-{{ item.id }}')" class="btn btn-ghost border-brandBorder/30 text-brandMuted hover:text-white px-3 py-1.5 text-[10px]" title="Copiar Texto Bruto">
+                                COPIAR
+                            </button>
+                            
+                            <!-- Ações Rápidas de Status -->
+                            {% if item.status != 'ready_to_publish' and item.status != 'published' %}
+                            <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=ready_to_publish" method="POST" class="inline">
+                                <button type="submit" class="btn btn-ghost hover:bg-yellow-500/10 border-brandBorder/30 hover:border-yellow-500/30 text-brandMuted hover:text-status-amber px-3 py-1.5 text-[10px]">PRONTO</button>
+                            </form>
+                            {% endif %}
+    
+                            {% if item.status != 'needs_revision' and item.status != 'published' %}
+                            <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=needs_revision" method="POST" class="inline">
+                                <button type="submit" class="btn btn-ghost hover:bg-red-500/10 border-brandBorder/30 hover:border-red-500/30 text-brandMuted hover:text-status-red px-3 py-1.5 text-[10px]">REVISAR</button>
+                            </form>
+                            {% endif %}
+    
+                            {% if item.status != 'published' %}
+                            <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=published" method="POST" class="inline">
+                                <button type="submit" class="btn btn-ghost hover:bg-green-500/10 border-brandBorder/30 hover:border-green-500/30 text-brandMuted hover:text-status-green px-3 py-1.5 text-[10px]">PUBLICAR</button>
+                            </form>
+                            {% endif %}
+                            
+                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn btn-primary px-3 py-1.5 text-[10px]">
+                                VER PEÇA
+                            </a>
+                        {% else %}
+                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn btn-primary px-3 py-1.5 text-[10px]">
+                                VER ASSET
+                            </a>
                         {% endif %}
-
-                        {% if item.status != 'needs_revision' and item.status != 'published' %}
-                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=needs_revision" method="POST" class="inline">
-                            <button type="submit" class="btn btn-ghost hover:bg-red-500/10 border-brandBorder/30 hover:border-red-500/30 text-brandMuted hover:text-status-red px-3 py-1.5 text-[10px]">REVISAR</button>
-                        </form>
-                        {% endif %}
-                        
-                        {% if item.status != 'published' %}
-                        <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=published" method="POST" class="inline">
-                            <button type="submit" class="btn btn-ghost hover:bg-green-500/10 border-brandBorder/30 hover:border-green-500/30 text-brandMuted hover:text-status-green px-3 py-1.5 text-[10px]">PUBLICAR</button>
-                        </form>
-                        {% endif %}
-                        
-                        <!-- Ver Mesa de Edição -->
-                        <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn btn-ghost bg-white/5 border-white/10 hover:border-white/30 text-white px-4 py-1.5 text-[10px] font-bold" title="Mesa de Edição / Assets">
-                            VER PEÇA
-                        </a>
                     </td>
                 </tr>
                 {% endfor %}
