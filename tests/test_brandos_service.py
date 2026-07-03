@@ -70,3 +70,25 @@ def test_update_item_schedule_rebuilds_markdown(brandos_service):
     assert "Publication Log" in md_content
     # Verifica se a data do log aparece no markdown
     assert "2026-01-01" in md_content
+
+def test_sync_ignores_non_date_folders(tmp_path):
+    import os
+    import json
+    from app.core.brandos_service import BrandOSService
+    
+    base_dir = str(tmp_path)
+    os.makedirs(os.path.join(base_dir, "data", "generated", "briefings"))
+    os.makedirs(os.path.join(base_dir, "data", "registry"))
+    
+    with open(os.path.join(base_dir, "data", "generated", "briefings", "briefing-001.md"), "w", encoding="utf-8") as f:
+        f.write("# Briefing Test")
+        
+    # Inicializa o service com o base_dir que já contém a pasta "briefings"
+    service = BrandOSService(base_dir=base_dir)
+    
+    history = service.list_history()
+    
+    # Assert que NENHUMA entrada no history se chama "briefings"
+    for entry in history:
+        assert entry.get("id") != "briefings", f"A pasta 'briefings' não deveria ter sido parseada como semana gerada!"
+        assert entry.get("date") != "briefings", f"A pasta 'briefings' não deveria ter sido parseada como data de semana!"

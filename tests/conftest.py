@@ -65,7 +65,7 @@ def brandos_service(tmp_path):
     with open(registry_path, "w", encoding="utf-8") as f:
         json.dump(registry_data, f, ensure_ascii=False, indent=2)
         
-    # 2. Create dummy markdown files for the generated folders
+    # 3. Create dummy markdown files for the generated folders
     week1_dir = os.path.join(base_dir, "data", "generated", "2026-01-01-semana-fake1")
     os.makedirs(week1_dir)
     with open(os.path.join(week1_dir, "03-post-segunda.md"), "w", encoding="utf-8") as f:
@@ -76,10 +76,7 @@ def brandos_service(tmp_path):
     with open(os.path.join(week2_dir, "04-post-quarta.md"), "w", encoding="utf-8") as f:
         f.write("Conteudo Post 2")
         
-    # Create the service pointing to this temporary base_dir
-    service = BrandOSService(base_dir=base_dir)
-    
-    # 4. Fake Briefings (in data/generated/briefings/) - Created after init to avoid _sync_generated_to_history adding it as a week
+    # 4. Fake Briefings (in data/generated/briefings/) - Created BEFORE init to ensure it is ignored by sync
     briefings_dir = os.path.join(base_dir, "data", "generated", "briefings")
     os.makedirs(briefings_dir)
     with open(os.path.join(briefings_dir, "briefing-001.md"), "w", encoding="utf-8") as f:
@@ -87,4 +84,7 @@ def brandos_service(tmp_path):
     with open(os.path.join(briefings_dir, "briefing-002.md"), "w", encoding="utf-8") as f:
         f.write("Data de criação: 2026-07-03\nFonte: Teste\nStatus: pendente\n\n# Briefing 002")
         
+    # Create the service pointing to this temporary base_dir
+    service = BrandOSService(base_dir=base_dir)
+    
     return service

@@ -33,6 +33,9 @@ class BrandOSService:
             if not os.path.isdir(folder_path):
                 continue
                 
+            if not re.match(r"^\d{4}-\d{2}-\d{2}", folder):
+                continue
+                
             date_prefix = folder[:10]
             if date_prefix not in known_dates:
                 # Criar nova entrada
