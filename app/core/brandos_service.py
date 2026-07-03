@@ -17,15 +17,8 @@ class BrandOSService:
         os.makedirs(self.assets_dir, exist_ok=True)
         self.history_repo = HistoryRepository(base_dir)
         self.asset_service = AssetService(self.assets_dir, self.history_repo)
-        
         from app.core.llm_client import LLMClient
-        try:
-            self.llm = LLMClient()
-        except Exception as e:
-            # Em modo de teste pode não ter chave configurada, então ignoramos se falhar.
-            # Os testes vão mockar a chamada pro LLM de qualquer forma.
-            print(f"Warning: Falha ao instanciar LLMClient no construtor: {e}")
-            self.llm = None
+        self.llm = LLMClient()
             
         from app.core.services.calendar_service import CalendarService
         self.calendar_service = CalendarService(self.history_repo, self.llm)

@@ -85,9 +85,11 @@ def setup_mock_env(base_dir):
         f.write("Data de criação: 2026-07-03\nFonte: Teste\nStatus: pendente\n\n# Briefing 002")
 
 @pytest.fixture
-def mock_env(tmp_path):
+def mock_env(tmp_path, monkeypatch):
     base_dir = str(tmp_path)
     setup_mock_env(base_dir)
+    monkeypatch.setenv("BRANDOS_API_KEY", "fake-key-for-tests")
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key-for-tests") # Em caso de usar outro nome
     return base_dir
 
 @pytest.fixture
