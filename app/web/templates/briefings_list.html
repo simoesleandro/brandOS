@@ -31,8 +31,20 @@
             <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
                     <h3 class="text-lg font-medium text-white">{{ b.filename }}</h3>
-                    {% if b.status == 'briefing_aprovado' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30">Aprovado</span>
+                    {% if 'cmo_recommendation' in b.source.lower() or 'cmo recommendation' in b.source.lower() %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-[#1da1f2]/20 text-[#1da1f2] border border-[#1da1f2]/30 flex items-center gap-1">
+                        <i class="ph ph-robot"></i> CMO Agent
+                    </span>
+                    {% endif %}
+                    
+                    {% if b.status == 'briefing_aprovado' or b.status == 'approved' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Aprovado</span>
+                    {% elif b.status == 'draft' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">Rascunho</span>
+                    {% elif b.status == 'reviewed' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Revisado</span>
+                    {% elif b.status == 'generated' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30">Semana Gerada</span>
                     {% else %}
                     <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">{{ b.status }}</span>
                     {% endif %}
@@ -51,12 +63,25 @@
             
             <div class="flex items-center gap-3">
                 <a href="/briefings/{{ b.filename }}" class="btn-secondary px-4 py-2">
-                    Abrir Briefing
+                    <i class="ph ph-eye"></i> Ver
                 </a>
-                <button onclick="copyToClipboard('filename-{{ loop.index }}')" class="btn-secondary px-3 py-2 flex items-center gap-2" title="Copiar Nome">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                {% if b.status == 'draft' or b.status == 'reviewed' or b.status == 'approved' or b.status == 'briefing_aprovado' %}
+                <a href="/briefings/{{ b.filename }}/edit" class="btn-secondary px-3 py-2" title="Editar">
+                    <i class="ph ph-pencil-simple"></i>
+                </a>
+                {% endif %}
+                
+                {% if b.status == 'draft' or b.status == 'reviewed' %}
+                <button onclick="approveBriefing('{{ b.filename }}')" class="btn-secondary px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10" title="Aprovar">
+                    <i class="ph ph-check-circle"></i> Aprovar
                 </button>
-                <div id="filename-{{ loop.index }}" class="hidden">{{ b.filename }}</div>
+                {% endif %}
+                
+                {% if b.status == 'approved' or b.status == 'briefing_aprovado' %}
+                <button onclick="window.location.href='/briefings/{{ b.filename }}'" class="bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2" title="Gerar Semana">
+                    <i class="ph ph-magic-wand"></i> Gerar
+                </button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

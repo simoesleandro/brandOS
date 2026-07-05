@@ -205,6 +205,13 @@ class CalendarService:
                         updated = True
                         break
                 if updated:
+                    from datetime import datetime
+                    if item.get("status") == "published":
+                        tracking = item.get("post_publish_tracking_status")
+                        if tracking in ["waiting_24h_metrics", "waiting_48h_metrics", "waiting_7d_metrics"]:
+                            item["post_publish_tracking_status"] = "metrics_imported"
+                        item["last_metrics_imported_at"] = datetime.now().isoformat()
+                        item["updated_at"] = datetime.now().isoformat()
                     break
         
         if updated:

@@ -18,9 +18,29 @@ class HistoryRepository:
             return []
             
     def save(self, history: list) -> None:
+        import tempfile
+        import shutil
+        import datetime
         json_path = os.path.join(self.registry_dir, "publication-log.json")
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2, ensure_ascii=False)
+        
+        # Create backup if exists
+        if os.path.exists(json_path):
+            backups_dir = os.path.join(self.registry_dir, "backups")
+            os.makedirs(backups_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup_file = os.path.join(backups_dir, f"publication-log-{timestamp}.json")
+            shutil.copy2(json_path, backup_file)
+            
+        temp_fd, temp_path = tempfile.mkstemp(dir=self.registry_dir, text=True)
+        try:
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                json.dump(history, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, json_path)
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise e
+            
         self.rebuild_markdown_log(history)
 
     def rebuild_markdown_log(self, history: list) -> None:

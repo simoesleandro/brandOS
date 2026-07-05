@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <a href="/publications" class="text-brandPrimary hover:text-white flex items-center gap-2 mb-2 transition-colors">
+                <i class="ph ph-arrow-left"></i> Voltar para Publicações
+            </a>
+            <h1 class="text-3xl font-bold text-white font-heading">
+                Aprendizado Editorial
+            </h1>
+            <p class="text-gray-400 mt-1">
+                Reflexões e insights estratégicos extraídos desta publicação.
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="generateLearning()" class="btn-primary" id="btn-generate">
+                <i class="ph ph-arrows-clockwise"></i> Gerar Nova Versão
+            </button>
+        </div>
+    </div>
+
+    <!-- Metadados da Peça Original -->
+    <div class="card p-6 mb-8 border border-white/5 bg-white/5">
+        <h2 class="text-lg font-semibold text-white mb-4 border-b border-white/10 pb-2">Sobre a Publicação</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Título</span>
+                <span class="text-white">{{ item.title | default('Sem título') }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Status</span>
+                <span class="badge badge-success">Publicado</span>
+                {% if item.post_publish_tracking_status %}
+                <span class="badge bg-brandPrimary/20 text-brandPrimary ml-2">
+                    {{ item.post_publish_tracking_status | translate_status }}
+                </span>
+                {% endif %}
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Data de Publicação</span>
+                <span class="text-gray-300">{{ item.published_at }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Link Original</span>
+                {% if item.published_url %}
+                <a href="{{ item.published_url }}" target="_blank" class="text-brandPrimary hover:underline flex items-center gap-1">
+                    Ver no LinkedIn <i class="ph ph-arrow-up-right"></i>
+                </a>
+                {% else %}
+                <span class="text-gray-500">Não informado</span>
+                {% endif %}
+            </div>
+            <div>
+                <span class="text-xs text-gray-500 uppercase tracking-wider block mb-1">Atualizado em</span>
+                <span class="text-gray-300">{{ item.editorial_learning_generated_at }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo do Aprendizado -->
+    <div class="card p-8 border border-brandPrimary/20 bg-brandPrimary/5">
+        {% if learning_html %}
+            <div class="briefing-markdown prose prose-invert max-w-none">
+                {{ learning_html | safe }}
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-brandPrimary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph ph-brain text-3xl text-brandPrimary"></i>
+                </div>
+                <h3 class="text-xl font-medium text-white mb-2">Nenhum aprendizado gerado</h3>
+                <p class="text-gray-400 mb-6">
+                    Ainda não extraímos insights desta publicação. Gere o primeiro relatório agora.
+                </p>
+                <button onclick="generateLearning()" class="btn-primary" id="btn-generate-empty">
+                    <i class="ph ph-sparkle"></i> Gerar Aprendizado Editorial
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+async function generateLearning() {
+    if (!confirm("Deseja gerar um novo relatório de aprendizado editorial? Isso pode levar alguns segundos.")) {
+        return;
+    }
+    
+    const btns = [document.getElementById('btn-generate'), document.getElementById('btn-generate-empty')];
+    btns.forEach(btn => {
+        if(btn) {
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Gerando...';
+            btn.disabled = true;
+            btn.dataset.origHTML = origHTML;
+        }
+    });
+
+    try {
+        const res = await fetch(`/publications/posts/{{ item.id if not item.item_id else item.item_id }}/generate-learning`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: true })
+        });
+        
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            const error = await res.json();
+            alert("Erro: " + (error.detail || "Falha ao gerar aprendizado."));
+            btns.forEach(btn => {
+                if(btn) {
+                    btn.innerHTML = btn.dataset.origHTML;
+                    btn.disabled = false;
+                }
+            });
+        }
+    } catch (error) {
+        console.error(error);
+        alert("Erro na requisição.");
+        btns.forEach(btn => {
+            if(btn) {
+                btn.innerHTML = btn.dataset.origHTML;
+                btn.disabled = false;
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

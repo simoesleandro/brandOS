@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6 max-w-5xl mx-auto">
+    {% if error %}
+    <div class="bg-red-900/50 border border-red-500/50 p-4 rounded text-red-200">
+        {{ error }}
+    </div>
+    {% else %}
+    
+    <!-- HEADER -->
+    <div class="flex items-start justify-between border-b border-brandBorder/50 pb-6">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-2xl font-bold tracking-tight text-white">{{ assistant_data.item.title or 'Sem título' }}</h1>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="badge badge-{{ assistant_data.item.status }} px-2 py-0.5 text-[10px] uppercase">{{ assistant_data.item.status }}</span>
+                            {% if assistant_data.item.content_version == 'manual_final' %}
+                            <span class="badge px-2 py-0.5 text-[10px] uppercase bg-green-500/20 text-green-400 border border-green-500/30">Versão Final</span>
+                            {% endif %}
+                            {% if assistant_data.item.content_source == 'human_refined' %}
+                            <span class="badge px-2 py-0.5 text-[10px] uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Refinado</span>
+                            {% endif %}
+                        </div>
+            </div>
+            <p class="text-sm text-brandMuted font-mono flex items-center gap-2">
+                🗓️ {{ assistant_data.item.scheduled_date }} {{ assistant_data.item.scheduled_time or '' }} 
+                <span class="text-[10px] bg-brandSidebar px-1.5 py-0.5 rounded">{{ assistant_data.item.timezone or 'America/Sao_Paulo' }}</span>
+            </p>
+        </div>
+        {% if assistant_data.item.generated_folder %}
+        <a href="/generated-weeks/{{ assistant_data.item.generated_folder }}" class="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            Revisar Semana
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- LEFT COLUMN: Content & Assets -->
+        <div class="col-span-2 space-y-6">
+            
+            <!-- Texto Final -->
+            <div class="cockpit-card p-0 bg-[#020205] overflow-hidden">
+                <div class="p-4 border-b border-brandBorder/50 bg-[#06060c] flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Texto do Post</h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openEditModal()" class="btn-primary px-3 py-1.5 text-xs flex items-center gap-2">
+                            Editar Versão Final
+                        </button>
+                        <button onclick="copyToClipboard('post-content-area')" class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-2">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Copiar Texto
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 relative">
+                    {% if not assistant_data.post_content %}
+                    <div class="bg-yellow-900/20 text-yellow-200 p-3 rounded text-sm mb-4 border border-yellow-700/30">
+                        Aviso: O conteúdo deste post está vazio ou o arquivo não foi encontrado.
+                    </div>
+                    {% endif %}
+                    <div id="post-content-area" class="prose prose-invert max-w-none text-sm whitespace-pre-wrap font-sans text-gray-300">
+                        {{- assistant_data.post_content -}}
+                    </div>
+                </div>
+                <div class="px-4 py-2 bg-[#06060c] border-t border-brandBorder/50 text-right">
+                    <span class="text-[10px] text-brandMuted font-mono" id="char-count">0 caracteres</span>
+                </div>
+            </div>
+
+            <!-- Assets Vinculados -->
+            <div class="cockpit-card p-0 bg-[#020205] overflow-hidden">
+                <div class="p-4 border-b border-brandBorder/50 bg-[#06060c]">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Assets Vinculados</h2>
+                </div>
+                <div class="p-4 space-y-3">
+                    {% for asset in assistant_data.linked_assets %}
+                    <div class="flex items-center justify-between p-3 border border-brandBorder/50 rounded bg-brandBg/50 hover:border-brandAccentPurple/50 transition-colors">
+                        <div>
+                            <p class="text-sm font-medium text-white">{{ asset.title or 'Asset sem nome' }}</p>
+                            <p class="text-[10px] text-brandMuted font-mono">Tipo: {{ asset.content_type or 'Mídia' }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-brandMuted">{{ asset.content_file or 'Nenhum arquivo local associado' }}</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-brandMuted italic">Nenhum asset vinculado localizado no registry para este post.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Instruções Extras -->
+            <div class="cockpit-card p-0 bg-[#020205] overflow-hidden">
+                <div class="p-4 border-b border-brandBorder/50 bg-[#06060c]">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Diretrizes da Semana</h2>
+                </div>
+                <div class="p-4 space-y-6">
+                    <div>
+                        <h3 class="text-xs font-bold text-brandMuted uppercase mb-2">Instruções de Publicação</h3>
+                        <div class="p-4 bg-brandBg/30 rounded border border-brandBorder/30 text-xs text-gray-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar prose prose-invert">
+                            {{- assistant_data.instructions or 'Arquivo de instruções não encontrado.' -}}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-brandMuted uppercase mb-2">Prompts Visuais (Midjourney)</h3>
+                        <div class="p-4 bg-brandBg/30 rounded border border-brandBorder/30 text-xs text-gray-400 whitespace-pre-wrap max-h-48 overflow-y-auto custom-scrollbar prose prose-invert">
+                            {{- assistant_data.prompts or 'Arquivo de prompts não encontrado.' -}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Checklist & Actions -->
+        <div class="space-y-6">
+            
+            <div class="cockpit-card p-6 bg-[#020205] sticky top-6">
+                <h2 class="text-sm font-bold text-white uppercase tracking-widest font-mono mb-6 border-b border-brandBorder/50 pb-2">Checklist de Publicação</h2>
+                
+                <div class="space-y-4 mb-8">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" class="w-4 h-4 rounded border-brandBorder bg-brandBg text-brandAccentPurple focus:ring-brandAccentPurple focus:ring-offset-brandBg">
+                        <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Texto copiado</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" class="w-4 h-4 rounded border-brandBorder bg-brandBg text-brandAccentPurple focus:ring-brandAccentPurple focus:ring-offset-brandBg">
+                        <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Assets e mídias conferidos</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" class="w-4 h-4 rounded border-brandBorder bg-brandBg text-brandAccentPurple focus:ring-brandAccentPurple focus:ring-offset-brandBg">
+                        <span class="text-sm text-gray-300 group-hover:text-white transition-colors">LinkedIn aberto</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" class="w-4 h-4 rounded border-brandBorder bg-brandBg text-brandAccentPurple focus:ring-brandAccentPurple focus:ring-offset-brandBg">
+                        <span class="text-sm text-gray-300 group-hover:text-white transition-colors">Post publicado no LinkedIn</span>
+                    </label>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="pt-6 border-t border-brandBorder/50">
+                    {% if assistant_data.item.status == 'scheduled' %}
+                    <button onclick="markReady('{{ assistant_data.item.item_id }}')" class="w-full btn-primary bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 mb-3">
+                        Preparar Publicação
+                    </button>
+                    <p class="text-[10px] text-brandMuted text-center">Marca o item como em processo de publicação.</p>
+                    
+                    {% elif assistant_data.item.status == 'publishing_ready' %}
+                    <div class="space-y-3 mb-4">
+                        <label class="block text-xs font-mono text-brandMuted">URL da Publicação (Opcional)</label>
+                        <input type="url" id="pub-url" placeholder="https://linkedin.com/posts/..." class="w-full bg-brandBg/50 text-white text-sm border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-green-500">
+                        
+                        <label class="block text-xs font-mono text-brandMuted">Data/Hora (Opcional, Padrão: Agora)</label>
+                        <input type="datetime-local" id="pub-date" class="w-full bg-brandBg/50 text-white text-sm border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-green-500">
+                    </div>
+                    
+                    <button onclick="markPublished('{{ assistant_data.item.item_id }}')" class="w-full btn-primary bg-green-500 hover:bg-green-400 text-black font-bold py-3 mb-3">
+                        Marcar como Publicado
+                    </button>
+                    
+                    {% elif assistant_data.item.status == 'published' %}
+                    <div class="bg-green-500/10 border border-green-500/30 rounded p-4 mb-6">
+                        <p class="text-xs text-green-400 font-bold uppercase tracking-wider mb-2">Publicado com sucesso</p>
+                        <p class="text-[10px] text-gray-400 font-mono mb-1">Data: {{ assistant_data.item.published_at }}</p>
+                        {% if assistant_data.item.published_url %}
+                        <a href="{{ assistant_data.item.published_url }}" target="_blank" class="text-xs text-brandAccentCyan hover:underline truncate block">Ver no LinkedIn ↗</a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-3 mb-4">
+                        <label class="block text-xs font-mono text-brandMuted">Motivo (Opcional)</label>
+                        <input type="text" id="undo-reason" placeholder="Ex: link quebrado, erro de digitação" class="w-full bg-brandBg/50 text-white text-sm border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-red-500">
+                    </div>
+                    
+                    <button onclick="undoPublished('{{ assistant_data.item.item_id }}')" class="w-full btn-ghost text-red-400 border border-red-500/30 hover:bg-red-500/10 py-3">
+                        Desfazer Publicação
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Edição Versão Final -->
+{% if not error %}
+<div id="edit-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+    <div class="bg-brandBg border border-brandBorder/50 w-full max-w-3xl rounded-lg shadow-2xl overflow-hidden flex flex-col h-[80vh]">
+        <div class="p-4 border-b border-brandBorder/50 flex items-center justify-between bg-brandSidebar/30">
+            <h3 class="text-sm font-bold text-white uppercase tracking-widest font-mono">Editar Versão Final</h3>
+            <button onclick="closeEditModal()" class="text-brandMuted hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1 flex flex-col gap-4">
+            <div class="bg-brandSidebar p-3 rounded text-sm text-brandMuted mb-2 border border-brandBorder/30">
+                <p>O texto salvo aqui será marcado como a versão oficial ("Versão Final") e não alterará métricas ou ativos da peça. Use este espaço para colar ou editar a versão refinada pelo humano.</p>
+            </div>
+            <textarea id="edit-content-input" class="w-full h-full min-h-[300px] bg-[#020205] text-brandMuted text-sm font-mono border border-brandBorder/50 rounded p-4 focus:outline-none focus:border-brandAccentPurple transition-colors resize-none"></textarea>
+        </div>
+        
+        <div class="p-4 border-t border-brandBorder/50 flex justify-end gap-3 bg-brandSidebar/30">
+            <button onclick="closeEditModal()" class="btn-ghost px-4 py-2 text-sm">Cancelar</button>
+            <button onclick="saveEditContent('{{ assistant_data.item.id }}')" class="btn-primary px-4 py-2 text-sm">Salvar Versão Final</button>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+<script>
+    function openEditModal() {
+        const modal = document.getElementById('edit-modal');
+        const input = document.getElementById('edit-content-input');
+        const contentArea = document.getElementById('post-content-area');
+        input.value = contentArea.innerText || contentArea.textContent;
+        modal.classList.remove('hidden');
+    }
+    
+    function closeEditModal() {
+        document.getElementById('edit-modal').classList.add('hidden');
+    }
+    
+    async function saveEditContent(itemId) {
+        const content = document.getElementById('edit-content-input').value;
+        try {
+            const res = await fetch(`/publications/posts/${itemId}/edit-content`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    content: content,
+                    confirm: true,
+                    source_note: "Texto refinado na tela do Assistente de Publicação Manual."
+                })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.detail);
+            alert(data.message);
+            window.location.reload();
+        } catch(e) {
+            alert(e.message);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const textArea = document.getElementById('post-content-area');
+        if(textArea) {
+            const count = textArea.innerText.trim().length;
+            document.getElementById('char-count').innerText = `${count} caracteres (aprox)`;
+        }
+    });
+
+    async function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        try {
+            await navigator.clipboard.writeText(text);
+            alert("Texto copiado para a área de transferência!");
+        } catch (err) {
+            alert("Erro ao copiar texto: " + err);
+        }
+    }
+
+    async function markReady(itemId) {
+        if(!confirm("Iniciar processo de publicação manual?")) return;
+        
+        try {
+            const res = await fetch(`/publish/post/${itemId}/mark-ready`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.detail);
+            window.location.reload();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+    
+    async function markPublished(itemId) {
+        if(!confirm("Tem certeza que a publicação foi realizada com sucesso no LinkedIn?")) return;
+        
+        const url = document.getElementById('pub-url')?.value;
+        const dateInput = document.getElementById('pub-date')?.value;
+        
+        const payload = { confirm: true };
+        if(url) payload.published_url = url;
+        // Transform datetime-local to iso format if present
+        if(dateInput) {
+            // dateInput format is YYYY-MM-DDTHH:MM
+            payload.published_at = dateInput + ":00-03:00"; 
+        }
+        
+        try {
+            const res = await fetch(`/publish/post/${itemId}/mark-published`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.detail);
+            window.location.reload();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+    
+    async function undoPublished(itemId) {
+        const reason = document.getElementById('undo-reason')?.value;
+        if(!confirm("Atenção: Você está desfazendo a marcação de publicado. O item retornará para Scheduled. Deseja continuar?")) return;
+        
+        const payload = { confirm: true };
+        if(reason) payload.reason = reason;
+        
+        try {
+            const res = await fetch(`/publish/post/${itemId}/undo-published`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.detail);
+            window.location.reload();
+        } catch (e) {
+            alert(e.message);
+        }
+    }
+
+function discardItem(itemId) {
+    if(!confirm("Tem certeza que deseja descartar este post? Ele não será apagado, mas sairá do fluxo operacional.")) return;
+    fetch(`/publications/posts/${itemId}/discard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true, reason: "Descartado manualmente no Assistente de Publicação" })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') { window.location.href = '/ops'; }
+        else { alert(data.detail || data.error || 'Erro ao descartar'); }
+    }).catch(e => { console.error(e); alert("Erro na requisição."); });
+}
+</script>
+
+{% endblock %}

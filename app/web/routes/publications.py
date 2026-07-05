@@ -11,10 +11,28 @@ service = BrandOSService()
 
 @router.get("/")
 async def list_publications(request: Request):
-    weeks = service.list_generated_weeks()
+    all_weeks = service.list_generated_weeks()
+    editorial_weeks = []
+    technical_weeks = []
+    
+    for week in all_weeks:
+        is_editorial = False
+        items_to_process = week.get("items", []) if "items" in week else [week]
+        for item in items_to_process:
+            is_main, _ = service._is_main_publication(item)
+            if is_main:
+                is_editorial = True
+                break
+                
+        if is_editorial:
+            editorial_weeks.append(week)
+        else:
+            technical_weeks.append(week)
+            
     return templates.TemplateResponse("publications.html", {
         "request": request,
-        "weeks": weeks
+        "weeks": editorial_weeks,
+        "technical_weeks": technical_weeks
     })
 
 @router.get("/{folder_id}")
@@ -45,6 +63,28 @@ async def update_item_status(request: Request, folder_id: str, item_id: str, sta
     if referer:
         return RedirectResponse(url=referer, status_code=303)
     return RedirectResponse(url=f"/publications/{folder_id}", status_code=303)
+
+@router.post("/posts/{item_id}/edit-content")
+async def edit_post_content(item_id: str, request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato JSON inválido.")
+        
+    content = data.get("content")
+    confirm = data.get("confirm", False)
+    source_note = data.get("source_note", "")
+    
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmação é obrigatória.")
+        
+    try:
+        result = service.update_item_content(item_id, content, source_note)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{folder_id}/item/{item_id}")
 async def get_item_detail(request: Request, folder_id: str, item_id: str):
@@ -401,3 +441,204 @@ async def update_schedule(
         base_url = base_url.split("?")[0]
         
     return RedirectResponse(url=f"{base_url}?msg=schedule_saved", status_code=303)
+
+@router.post("/posts/{item_id}/discard")
+async def discard_post(item_id: str, request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato JSON inválido.")
+        
+    confirm = data.get("confirm", False)
+    reason = data.get("reason", "Descartado manualmente pelo usuário.")
+    
+    try:
+        result = service.discard_item(item_id, reason, confirm)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/registry/normalize-ids")
+async def normalize_registry_ids(request: Request):
+    """Normaliza itens sem item_id no histórico"""
+    data = await request.json()
+    if not data.get("confirm"):
+        raise HTTPException(status_code=400, detail="Confirmação obrigatória.")
+        
+    try:
+        result = service.normalize_registry_item_ids()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/registry/invalid-items-preview")
+def preview_invalid_registry_items():
+    """Prévia de itens com problemas no histórico"""
+    try:
+        result = service.preview_invalid_items()
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/registry/discard-items")
+async def discard_registry_items(request: Request):
+    """Descarte explícito em massa"""
+    data = await request.json()
+    if not data.get("confirm"):
+        raise HTTPException(status_code=400, detail="Confirmação obrigatória.")
+        
+    item_ids = data.get("item_ids", [])
+    if not isinstance(item_ids, list) or not item_ids:
+        raise HTTPException(status_code=400, detail="Lista de item_ids inválida ou vazia.")
+        
+    reason = data.get("reason", "Descarte manual em massa")
+    
+    try:
+        result = service.discard_items_bulk(item_ids, reason, True)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+from pydantic import BaseModel
+from fastapi import Depends, HTTPException
+
+class ManualPublishRequest(BaseModel):
+    confirm: bool
+    published_url: str | None = None
+    published_at: str | None = None
+
+@router.post("/posts/{item_id}/mark-manual-published")
+def mark_manual_published_endpoint(item_id: str, req: ManualPublishRequest):
+    if not req.confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária")
+    try:
+        updated_item = service.mark_manual_published(item_id, req.dict(exclude_none=True))
+        return {"status": "success", "item_id": item_id, "new_status": updated_item.get("status")}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/posts/{item_id}/start-tracking")
+async def start_tracking(item_id: str, request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato JSON inválido.")
+        
+    confirm = data.get("confirm", False)
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária.")
+        
+    try:
+        result = service.start_post_publish_tracking(item_id, confirm=confirm)
+        if result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=result.get("message"))
+        return {"status": "success", "message": result.get("message")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/posts/{item_id}/tracking-status")
+async def update_tracking_status(item_id: str, request: Request):
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato JSON inválido.")
+        
+    confirm = data.get("confirm", False)
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária.")
+        
+    tracking_status = data.get("tracking_status")
+    if not tracking_status:
+        raise HTTPException(status_code=400, detail="Status de acompanhamento obrigatório.")
+        
+    try:
+        result = service.update_post_publish_tracking_status(item_id, tracking_status, confirm=confirm)
+        if result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=result.get("message"))
+        return {"status": "success", "message": result.get("message")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/posts/{item_id}/generate-learning")
+async def generate_learning(item_id: str, request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+        
+    confirm = body.get("confirm", False)
+    notes = body.get("notes")
+    
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária para gerar aprendizado.")
+        
+    try:
+        result = service.generate_editorial_learning(item_id, confirm=confirm, notes=notes)
+        if result.get("status") == "error":
+            raise HTTPException(status_code=400, detail=result.get("message"))
+        return {
+            "success": True,
+            "item_id": result.get("item_id"),
+            "learning_file": result.get("learning_file"),
+            "generated_at": result.get("generated_at")
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/posts/{item_id}/learning")
+async def view_learning(request: Request, item_id: str):
+    history = service.list_history()
+    target_item = None
+    for entry in history:
+        for item in entry.get("items", []):
+            if service._get_item_identifier(item) == item_id:
+                target_item = item
+                break
+        if target_item:
+            break
+            
+    if not target_item:
+        raise HTTPException(status_code=404, detail="Item não encontrado")
+        
+    learning_file = target_item.get("editorial_learning_file")
+    
+    learning_html = None
+    if learning_file:
+        import os
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        abs_learning = os.path.join(base_dir, learning_file.replace("/", os.sep))
+        
+        if os.path.exists(abs_learning):
+            with open(abs_learning, "r", encoding="utf-8") as f:
+                raw_markdown = f.read()
+            try:
+                import markdown
+                learning_html = markdown.markdown(raw_markdown, extensions=["extra", "nl2br"])
+            except ImportError:
+                learning_html = "<pre class='whitespace-pre-wrap'>" + raw_markdown + "</pre>"
+                
+    return templates.TemplateResponse("editorial_learning.html", {
+        "request": request,
+        "item": target_item,
+        "learning_html": learning_html
+    })

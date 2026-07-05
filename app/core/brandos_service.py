@@ -23,7 +23,7 @@ class BrandOSService:
         from app.core.services.calendar_service import CalendarService
         self.calendar_service = CalendarService(self.history_repo, self.llm)
         
-        self._sync_generated_to_history()
+        # self._sync_generated_to_history()  # Removed to prevent writing on GET
 
     def _sync_generated_to_history(self):
         """Varre as pastas geradas e garante que existam no publication-log.json com a nova estrutura de itens."""
@@ -139,16 +139,20 @@ class BrandOSService:
         """Atualiza o status de um item específico."""
         history = self.list_history()
         date_prefix = folder_id[:10]
-        json_path = os.path.join(self.registry_dir, "publication-log.json")
         
         updated = False
+        target_item = None
         for entry in history:
             if entry.get("date") == date_prefix or entry.get("id") == folder_id:
                 for item in entry.get("items", []):
-                    if item.get("id") == item_id:
+                    if self._get_item_identifier(item) == item_id:
+                        old_status = item.get("status")
                         item["status"] = new_status
+                        target_item = item
                         if new_status == "published":
-                            item["published_at"] = datetime.now().isoformat()
+                            if old_status != "published" or not item.get("published_at"):
+                                from datetime import datetime
+                                item["published_at"] = datetime.now().isoformat()
                         updated = True
                         break
                 
@@ -158,6 +162,15 @@ class BrandOSService:
                 
         if updated:
             self.save_history(history)
+            
+            # Auto-start tracking if transitioning to published
+            if new_status == "published" and target_item:
+                is_main, _ = self._is_main_publication(target_item)
+                # Don't track assets
+                is_asset = target_item.get("status") == "used_as_asset" or target_item.get("linked_to_item_id") or target_item.get("asset_role")
+                if is_main and not is_asset:
+                    if not target_item.get("post_publish_tracking_status"):
+                        self.start_post_publish_tracking(item_id=item_id, confirm=True)
 
     def get_editorial_calendar(self) -> list:
         """Retorna uma lista de peças publicáveis para a Agenda Editorial."""
@@ -185,31 +198,41 @@ class BrandOSService:
         queue = []
         
         for entry in history:
-            active_projects.add(entry.get("project"))
+            project_added = False
             for item in entry.get("items", []):
-                total_items += 1
                 status = item.get("status")
                 
-                # Fila e métricas principais (apenas posts e carrosseis)
-                if item.get("type") in ["linkedin_post", "carousel"]:
-                    # Heuristica de folder_id
-                    folder_id = entry.get("id") or f"{entry.get('date')}-semana-brandos"
-                    
-                    if status == "used_as_asset":
+                is_main, reason = self._is_main_publication(item)
+                
+                if not is_main:
+                    # Check if it's a linked asset
+                    if status == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
                         linked_assets_items += 1
-                    elif status == "ready_to_publish":
-                        ready_items += 1
-                        queue.append({"project": entry.get("project"), "title": item.get("title"), "status": status, "folder_id": folder_id, "item_id": item.get("id")})
-                    elif status == "published":
-                        published_items += 1
-                        action_text = f"{item.get('title')} publicado"
-                        if item.get("assets"):
-                            action_text = f"{item.get('title')} publicado no LinkedIn com carrossel anexado"
-                        recent_activity.append({"action": action_text, "project": entry.get("project"), "time": item.get("published_at")})
-                    elif status in ["draft", "generated", "needs_revision"]:
-                        pending_items += 1
-                        queue.append({"project": entry.get("project"), "title": item.get("title"), "status": status, "folder_id": folder_id, "item_id": item.get("id")})
-                        
+                        if entry.get("project") and entry.get("project") != "Desconhecido":
+                            active_projects.add(entry.get("project"))
+                    continue
+                    
+                # It's a main publication
+                if entry.get("project") and entry.get("project") != "Desconhecido":
+                    active_projects.add(entry.get("project"))
+                    
+                total_items += 1
+
+                folder_id = entry.get("id") or f"{entry.get('date')}-semana-brandos"
+                
+                if status == "ready_to_publish":
+                    ready_items += 1
+                    queue.append({"project": entry.get("project"), "title": item.get("title"), "status": status, "folder_id": folder_id, "item_id": item.get("id")})
+                elif status == "published":
+                    published_items += 1
+                    action_text = f"{item.get('title')} publicado"
+                    if item.get("assets"):
+                        action_text = f"{item.get('title')} publicado no LinkedIn com carrossel anexado"
+                    recent_activity.append({"action": action_text, "project": entry.get("project"), "time": item.get("published_at")})
+                elif status in ["draft", "generated", "needs_revision"]:
+                    pending_items += 1
+                    queue.append({"project": entry.get("project"), "title": item.get("title"), "status": status, "folder_id": folder_id, "item_id": item.get("id")})
+                    
         # Organiza a fila para mostrar ready primeiro
         queue.sort(key=lambda x: 0 if x["status"] == "ready_to_publish" else 1)
         
@@ -241,23 +264,7 @@ class BrandOSService:
         
         # Injeta o conteúdo dos arquivos no item temporariamente para a view
         for item in entry.get("items", []):
-            # Classificação rigorosa conforme regras de negócios
-            is_linked_asset = False
-            if item.get("status") == "used_as_asset":
-                is_linked_asset = True
-            elif item.get("linked_to_item_id"):
-                is_linked_asset = True
-            elif item.get("asset_role"):
-                is_linked_asset = True
-                
-            is_main_publication = False
-            if not is_linked_asset:
-                item_type = item.get("type", "")
-                if item_type in ["linkedin_post", "post", "article", "video"]:
-                    is_main_publication = True
-                elif item_type == "carousel":
-                    if item.get("status") != "used_as_asset" and not item.get("linked_to_item_id"):
-                        is_main_publication = True
+            is_main_publication, _ = self._is_main_publication(item)
                         
             item["is_main_publication"] = is_main_publication
             item["is_scheduled"] = bool(item.get("scheduled_for")) and item.get("status") != "published"
@@ -619,11 +626,21 @@ Status: briefing_aprovado
         import datetime
         
         # 1. Validate briefing status
-        if not re.search(r'^\s*Status:\s*briefing_aprovado\s*$', briefing_content, re.IGNORECASE | re.MULTILINE):
+        if not re.search(r'^\s*Status:\s*(briefing_aprovado|approved)\s*$', briefing_content, re.IGNORECASE | re.MULTILINE):
             raise ValueError("Este briefing ainda não está aprovado para geração de semana editorial.")
             
         # 2. Validate date format (YYYY-MM-DD)
         data_inicial_str = options.get('start_date', '')
+
+        # Extrair metadata CMO
+        is_cmo = False
+        source_rec_id = None
+        if re.search(r'Fonte:\s*CMO Recommendation', briefing_content, re.IGNORECASE) or re.search(r'Origem técnica:\s*cmo_recommendation', briefing_content, re.IGNORECASE):
+            is_cmo = True
+            rec_match = re.search(r'Recommendation ID:\s*(.*)', briefing_content, re.IGNORECASE)
+            if rec_match:
+                source_rec_id = rec_match.group(1).strip()
+    
         try:
             dt = datetime.datetime.strptime(data_inicial_str, "%Y-%m-%d")
         except ValueError:
@@ -701,9 +718,8 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
 '''
         
         print("[CMO] Chamando Gemini para gerar semana...")
-        self.llm.connect()
         try:
-            response_text = self.llm.generate_text(prompt)
+            response_text = self.llm.generate_content("Você é o Content Strategist e Copywriter do BrandOS.", prompt)
         except Exception as e:
             print(f"[CMO] Erro na geração: {e}")
             raise Exception("Erro ao gerar semana com IA.")
@@ -751,12 +767,18 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         import uuid
         import datetime
-        from slugify import slugify
+        import re
+        import unicodedata
+        def local_slugify(value):
+            value = str(value)
+            value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+            value = re.sub(r'[^\w\s-]', '', value.lower())
+            return re.sub(r'[-\s]+', '-', value).strip('-_')
         
         now = datetime.datetime.now()
         timestamp = now.strftime("%H%M")
         data_inicial = data_inicial_str
-        slug = slugify(options.get('project_slug', 'projeto'))
+        slug = local_slugify(options.get('project_slug', 'projeto'))
         
         folder_name = f"{data_inicial}-semana-{slug}-{timestamp}"
         folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
@@ -804,18 +826,16 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         print("[CMO] Atualizando publication-log.json...")
         log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
         import json
+        log_data = []
         if os.path.exists(log_path):
             try:
                 with open(log_path, "r", encoding="utf-8") as f:
                     log_data = json.load(f)
+                    if not isinstance(log_data, list):
+                        log_data = []
             except Exception as e:
                 print(f"[CMO] Erro ao carregar publication-log.json: {e}")
-                log_data = {}
-        else:
-            log_data = {}
-            
-        if "items" not in log_data:
-            log_data["items"] = []
+                log_data = []
             
         # Helper to parse initial date and add days for suggested_for
         from datetime import datetime, timedelta
@@ -828,6 +848,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         # Adicionar apenas posts principais
         new_items = [
             {
+                "id": f"post-segunda-{timestamp}",
                 "item_id": f"post-segunda-{timestamp}",
                 "title": "Post segunda",
                 "type": "linkedin_post",
@@ -843,6 +864,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "generated_folder": folder_name
             },
             {
+                "id": f"post-quarta-{timestamp}",
                 "item_id": f"post-quarta-{timestamp}",
                 "title": "Post quarta",
                 "type": "linkedin_post",
@@ -858,6 +880,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "generated_folder": folder_name
             },
             {
+                "id": f"post-sexta-{timestamp}",
                 "item_id": f"post-sexta-{timestamp}",
                 "title": "Post sexta",
                 "type": "linkedin_post",
@@ -873,8 +896,25 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
                 "generated_folder": folder_name
             }
         ]
+        for item in new_items:
+            if is_cmo:
+                item["source"] = "generated_from_cmo_briefing"
+                item["source_briefing_file"] = filename
+                if source_rec_id:
+                    item["source_recommendation_id"] = source_rec_id
+                item["generated_folder"] = folder_name
+                item["generated_from_cmo"] = True
+                
+        new_week = {
+            "id": folder_name,
+            "date": data_inicial_str,
+            "project": options.get('project_slug', 'Projeto Desconhecido'),
+            "theme": blocks.get("PLANO EDITORIAL", "").split("\\n")[0][:100],
+            "status": "generated",
+            "items": new_items
+        }
         
-        log_data["items"].extend(new_items)
+        log_data.append(new_week)
         
         import shutil
         backup_dir = os.path.join(self.base_dir, "data", "registry", "backups")
@@ -898,6 +938,20 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             if os.path.exists(temp_path):
                 os.remove(temp_path)
             raise Exception(f"Erro ao salvar publication-log.json de forma segura: {e}")
+            
+        # 4. Atualizar briefing
+        try:
+            briefing_path = os.path.join(self.generated_dir, "briefings", filename)
+            if os.path.exists(briefing_path):
+                with open(briefing_path, "r", encoding="utf-8") as f:
+                    b_content = f.read()
+                import re
+                b_content = re.sub(r'^Status:\s*(.*)$', 'Status: generated', b_content, flags=re.MULTILINE | re.IGNORECASE)
+                b_content += "\n\n---\n\n*Semana gerada em: " + now.isoformat() + "*"
+                with open(briefing_path, "w", encoding="utf-8") as f:
+                    f.write(b_content)
+        except Exception as e:
+            print(f"[CMO] Erro ao atualizar status do briefing: {e}")
             
         print("[CMO] Semana gerada com sucesso.")
         return {"status": "success", "folder": folder_name}
@@ -1022,29 +1076,124 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         return result
         
-    def edit_generated_post(self, folder_name: str, planned_day: str, content: str) -> dict:
-        import os, shutil, datetime, tempfile, json
-        
-        folder_name = os.path.basename(folder_name)
-        folder_path = os.path.join(self.base_dir, "data", "generated", folder_name)
-        
-        if not os.path.exists(folder_path):
-            raise ValueError(f"Pasta {folder_name} não encontrada.")
+
+    def discard_item(self, item_id: str, reason: str = "Descartado manualmente pelo usuário.", confirm: bool = True) -> dict:
+        import zoneinfo
+        from datetime import datetime
+        if not confirm:
+            raise ValueError("É necessário confirmar o descarte.")
             
-        if planned_day not in ["segunda", "quarta", "sexta"]:
-            raise ValueError("Dia inválido. Use 'segunda', 'quarta' ou 'sexta'.")
+        history = self.history_repo.load()
+        target = None
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for i in items_to_process:
+                if self._get_item_identifier(i) == item_id:
+                    target = i
+                    break
+            if target:
+                break
+                
+        if not target:
+            raise ValueError(f"Post {item_id} não encontrado.")
             
-        filename = f"03-post-segunda.md" if planned_day == "segunda" else f"04-post-quarta.md" if planned_day == "quarta" else f"05-post-sexta.md"
-        file_path = os.path.join(folder_path, filename)
+        if target.get("status") == "published":
+            raise ValueError("Posts já publicados não podem ser descartados por este fluxo.")
+            
+        if target.get("status") == "used_as_asset" or target.get("linked_to_item_id") or target.get("asset_role"):
+            raise ValueError("Assets vinculados não podem ser descartados como publicações principais.")
+            
+        if target.get("status") not in ["draft", "generated", "edited", "approved", "scheduled", "publishing_ready", None, ""]:
+            raise ValueError(f"O status '{target.get('status')}' não permite descarte.")
+            
+        old_status = target.get("status")
         
+        target["status"] = "discarded"
+        target["discarded_from_status"] = old_status
+        
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_aware = datetime.now(tz)
+        target["discarded_at"] = now_aware.strftime("%Y-%m-%dT%H:%M:%S%z")
+        target["discarded_by"] = "human"
+        target["discard_reason"] = reason
+        target["updated_at"] = target["discarded_at"]
+        
+        # Clear operational scheduling fields
+        for field in ["scheduled_at", "scheduled_date", "scheduled_time", "scheduled_for", "priority"]:
+            if field in target:
+                del target[field]
+                
+        if "discard_history" not in target:
+            target["discard_history"] = []
+            
+        target["discard_history"].append({
+            "event": "discarded",
+            "from_status": old_status,
+            "to_status": "discarded",
+            "discarded_at": target["discarded_at"],
+            "discarded_by": target["discarded_by"],
+            "reason": reason
+        })
+        
+        self.history_repo.save(history)
+        
+        return {
+            "status": "success",
+            "message": "Post descartado com sucesso."
+        }
+
+    def update_item_content(self, item_id: str, content: str, source_note: str = "") -> dict:
+        import os, shutil, datetime
+        
+        history = self.history_repo.load()
+        
+        target_item = None
+        for entry in history:
+            for item in entry.get("items", []):
+                if self._get_item_identifier(item) == item_id:
+                    target_item = item
+                    break
+            if target_item:
+                break
+                
+        if not target_item:
+            raise ValueError(f"Item {item_id} não encontrado no histórico.")
+            
+        status = target_item.get("status", "")
+        
+        # Validation rules
+        if status == "published":
+            raise ValueError("Posts já publicados não podem ser editados por este fluxo. Crie uma nova versão ou use uma revisão futura.")
+            
+        if status == "used_as_asset" or target_item.get("linked_to_item_id") or target_item.get("asset_role"):
+            raise ValueError("Assets vinculados não podem ser editados como publicações principais.")
+            
+        if not content or not content.strip():
+            raise ValueError("Conteúdo não pode estar vazio.")
+            
+        content_file = target_item.get("content_file")
+        if not content_file:
+            raise ValueError("Item não possui arquivo de conteúdo associado.")
+            
+        # Resolve full path
+        file_path = os.path.join(self.base_dir, content_file)
         if not os.path.exists(file_path):
-            raise ValueError(f"Arquivo {filename} não encontrado na pasta da semana.")
+            raise ValueError(f"Arquivo {content_file} não encontrado fisicamente.")
             
-        # 1. Backup markdown
-        backups_dir = os.path.join(folder_path, "backups")
-        os.makedirs(backups_dir, exist_ok=True)
+        # Create backup
         now = datetime.datetime.now()
         timestamp = now.strftime("%Y%m%d-%H%M%S")
+        
+        # Determine backup dir
+        generated_folder = target_item.get("generated_folder")
+        if generated_folder:
+            backups_dir = os.path.join(self.base_dir, "data", "generated", generated_folder, "backups")
+        else:
+            file_dir = os.path.dirname(file_path)
+            backups_dir = os.path.join(file_dir, "backups")
+            
+        os.makedirs(backups_dir, exist_ok=True)
+        filename = os.path.basename(file_path)
         backup_file = os.path.join(backups_dir, f"{filename.replace('.md', '')}-{timestamp}.md")
         
         try:
@@ -1052,52 +1201,52 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         except Exception as e:
             raise ValueError(f"Erro ao criar backup do markdown: {e}")
             
-        # 2. Write new content
+        # Overwrite content
         try:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
         except Exception as e:
             raise ValueError(f"Erro ao salvar o conteúdo editado: {e}")
             
-        # 3. Update registry
-        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
-        if not os.path.exists(log_path):
-            return {"status": "success", "message": "Arquivo salvo, mas publication-log não encontrado."}
+        # Update metadata
+        target_item["content_version"] = "manual_final"
+        target_item["content_source"] = "human_refined"
+        target_item["updated_at"] = now.isoformat()
+        target_item["last_edited_at"] = now.isoformat()
+        target_item["edited_by"] = "human"
+        target_item["editorial_source"] = "manual_edit"
+        
+        if status == "generated":
+            target_item["status"] = "edited"
             
-        # Backup registry
-        reg_backups_dir = os.path.join(self.base_dir, "data", "registry", "backups")
-        os.makedirs(reg_backups_dir, exist_ok=True)
-        reg_backup_file = os.path.join(reg_backups_dir, f"publication-log-{timestamp}.json")
-        try:
-            shutil.copy2(log_path, reg_backup_file)
-        except Exception as e:
-            raise ValueError(f"Erro ao criar backup do publication-log.json: {e}")
+        # Update editorial history
+        if "editorial_history" not in target_item:
+            target_item["editorial_history"] = []
             
-        try:
-            with open(log_path, "r", encoding="utf-8") as f:
-                log_data = json.load(f)
-                
-            updated = False
-            for item in log_data:
-                if item.get("source") == "generated_from_briefing" and item.get("generated_folder") == folder_name and item.get("planned_day") == planned_day:
-                    item["updated_at"] = now.isoformat()
-                    item["last_edited_at"] = now.isoformat()
-                    
-                    if item.get("status") == "generated":
-                        item["status"] = "edited"
-                    updated = True
-                    break
-                    
-            if updated:
-                temp_fd, temp_path = tempfile.mkstemp(dir=os.path.dirname(log_path), text=True)
-                with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
-                    json.dump(log_data, f, indent=2, ensure_ascii=False)
-                os.replace(temp_path, log_path)
-                
-        except Exception as e:
-            raise ValueError(f"Erro ao atualizar publication-log.json: {e}")
+        note = source_note if source_note else "Texto refinado manualmente no BrandOS."
             
-        return {"status": "success", "message": "Post editado com sucesso."}
+        target_item["editorial_history"].append({
+            "event": "content_edited",
+            "edited_at": now.isoformat(),
+            "edited_by": "human",
+            "source": "manual_edit",
+            "backup_file": os.path.relpath(backup_file, self.base_dir).replace("\\", "/"),
+            "note": note
+        })
+        
+        # Save to repo (atomic + registry backup already implemented in save)
+        self.history_repo.save(history)
+        
+        return {
+            "status": "success",
+            "message": "Versão final salva com sucesso.",
+            "item_id": item_id,
+            "new_status": target_item["status"],
+            "content_version": "manual_final",
+            "content_source": "human_refined",
+            "backup_file": target_item["editorial_history"][-1]["backup_file"],
+            "updated_at": target_item["updated_at"]
+        }
     
     def approve_generated_post(self, folder_name: str, planned_day: str) -> dict:
         import os, shutil, datetime, tempfile, json
@@ -1257,7 +1406,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         target_item = None
         for item in log_data:
-            if item.get("item_id") == item_id:
+            if self._get_item_identifier(item) == item_id:
                 target_item = item
                 break
                 
@@ -1334,7 +1483,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         target_item = None
         for item in log_data:
-            if item.get("item_id") == item_id:
+            if self._get_item_identifier(item) == item_id:
                 target_item = item
                 break
                 
@@ -1393,7 +1542,7 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             
         target_item = None
         for item in log_data:
-            if item.get("item_id") == item_id:
+            if self._get_item_identifier(item) == item_id:
                 target_item = item
                 break
                 
@@ -1440,6 +1589,1067 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         return {"status": "success", "message": "Agendamento removido com sucesso."}
     
 
+
+
+    def _is_main_publication(self, item: dict) -> tuple[bool, str]:
+        # Excluir assets vinculados
+        if item.get("status") == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
+            return False, "Is asset"
+
+        # Termos proibidos
+        prohibited = [
+            "briefing", "briefings", "cmo", "cmo-next-week", "next-week", "next week",
+            "recommendation", "recommendations", "recomendacao", "recomendação",
+            "instruções", "instrucoes", "instrucoes-publicacao", "instruções-publicação",
+            "prompts-visuais", "prompts visuais", "plano-editorial", "plano editorial",
+            "publication instructions", "primeiro-comentario", "primeiro comentário",
+            "comment", "auxiliary", "support", "asset", "visual prompt"
+        ]
+
+        # Campos a verificar
+        fields = [
+            item.get("id", ""), item.get("item_id", ""), item.get("title", ""),
+            item.get("type", ""), item.get("post_type", ""), item.get("role", ""),
+            item.get("category", ""), item.get("source", ""), item.get("content_file", ""),
+            item.get("generated_folder", ""), item.get("file", ""), item.get("filename", "")
+        ]
+
+        text_to_check = " ".join([str(f).lower() for f in fields if f])
+
+        for term in prohibited:
+            if term in text_to_check:
+                return False, f"Prohibited term: {term}"
+
+        # Evidência positiva
+        planned_day = str(item.get("planned_day", "")).lower()
+        if planned_day in ["segunda", "quarta", "sexta"]:
+            return True, "Valid planned_day"
+
+        for term in ["post-segunda", "post-quarta", "post-sexta"]:
+            if term in str(item.get("id", "")).lower() or term in str(item.get("item_id", "")).lower() or term in str(item.get("content_file", "")).lower():
+                return True, f"Valid post term in ID/file: {term}"
+
+        type_fields = [str(item.get("type", "")).lower(), str(item.get("post_type", "")).lower()]
+        for t in type_fields:
+            if t in ["post", "linkedin_post", "main_post", "publication", "main_publication"]:
+                return True, f"Valid post type: {t}"
+
+        return False, "No positive evidence"
+
+    def _get_item_identifier(self, item: dict) -> str | None:
+        """Retorna o identificador de um item. Prefere item_id, fallback para id, senão None."""
+        return item.get("item_id") or item.get("id")
+
+
+
+    def generate_editorial_learning(self, item_id: str, confirm: bool = True, notes: str = None) -> dict:
+        import os
+        import re
+        import datetime
+        import zoneinfo
+        
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        history = self.history_repo.load()
+        if not history:
+            return {"status": "error", "message": "Registry vazio."}
+            
+        target_item = None
+        for entry in history:
+            for item in entry.get("items", []):
+                if self._get_item_identifier(item) == item_id:
+                    target_item = item
+                    break
+            if target_item:
+                break
+                
+        if not target_item:
+            return {"status": "error", "message": "Item não encontrado."}
+            
+        if not self._is_main_publication(target_item):
+            return {"status": "error", "message": "Não é possível gerar aprendizado para este tipo de item (asset/técnico)."}
+            
+        if target_item.get("status") != "published":
+            return {"status": "error", "message": "Item precisa estar publicado para gerar aprendizado."}
+            
+        # Preparar pasta
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        learning_dir = os.path.join(base_dir, "data", "generated", "editorial-learning")
+        os.makedirs(learning_dir, exist_ok=True)
+        
+        # Coletar contexto
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+        date_str = datetime.datetime.now(tz).strftime("%Y-%m-%d")
+        timestamp_str = datetime.datetime.now(tz).strftime("%Y%m%d-%H%M%S")
+        
+        safe_item_id = re.sub(r'[^a-zA-Z0-9-]', '-', item_id)
+        filename = f"{date_str}-learning-{safe_item_id}-{timestamp_str}.md"
+        filepath = os.path.join(learning_dir, filename)
+        rel_filepath = os.path.join("data", "generated", "editorial-learning", filename).replace("\\", "/")
+        
+        title = target_item.get("title", "Sem título")
+        published_at = target_item.get("published_at", "Não informada")
+        published_url = target_item.get("published_url", "Não informada")
+        format_info = target_item.get("format", "Não informado")
+        
+        # Conteúdo do post
+        post_content = "Não encontrado"
+        content_file = target_item.get("content_file")
+        if content_file:
+            abs_content = os.path.join(base_dir, content_file.replace("/", os.sep))
+            if os.path.exists(abs_content):
+                with open(abs_content, "r", encoding="utf-8") as f:
+                    post_content = f.read()
+                    
+        # Métricas
+        metrics = target_item.get("metrics", {})
+        latest_metrics = metrics.get("latest", {})
+        
+        # Análise anterior
+        analysis_content = "Não existe"
+        analysis_file = target_item.get("post_publish_analysis_file")
+        if analysis_file:
+            abs_analysis = os.path.join(base_dir, analysis_file.replace("/", os.sep))
+            if os.path.exists(abs_analysis):
+                with open(abs_analysis, "r", encoding="utf-8") as f:
+                    analysis_content = f.read()
+                    
+        prompt = f"""Você é o Editorial Learning Agent do BrandOS.
+
+Sua tarefa é transformar uma publicação já publicada e seus dados disponíveis em aprendizado editorial reutilizável.
+
+Não invente métricas.
+Não assuma resultados que não estão nos dados.
+Se faltarem métricas, diga claramente que a análise é limitada.
+
+### DADOS DA PUBLICAÇÃO
+Título: {title}
+Formato: {format_info}
+Publicado em: {published_at}
+URL: {published_url}
+
+### CONTEÚDO
+{post_content}
+
+### MÉTRICAS DISPONÍVEIS
+{latest_metrics if latest_metrics else 'Nenhuma métrica encontrada.'}
+
+### ANÁLISE QUALITATIVA ANTERIOR
+{analysis_content}
+
+### NOTAS DO USUÁRIO
+{notes if notes else 'Nenhuma nota fornecida.'}
+
+Gere um relatório em markdown com estas exatas seções:
+
+# Aprendizado Editorial
+
+## 1. Resumo da publicação
+- título
+- data de publicação
+- status
+- URL, se houver
+- formato percebido
+
+## 2. Tema e posicionamento
+- tema central
+- mensagem principal
+- pilar de conteúdo
+- conexão com marca pessoal
+
+## 3. Leitura das métricas disponíveis
+- métricas encontradas
+- sinais positivos
+- sinais fracos
+- limitações da análise
+
+Se não houver métricas, escreva EXATAMENTE a seguinte frase nesta seção:
+"Ainda não há métricas suficientes importadas para concluir desempenho."
+
+## 4. Avaliação editorial
+- força do gancho
+- clareza da mensagem
+- profundidade
+- especificidade
+- risco de parecer genérico
+- potencial de conversa
+
+## 5. O que funcionou
+Lista objetiva.
+
+## 6. O que pode melhorar
+Lista objetiva.
+
+## 7. Recomendação para próximos posts
+- repetir tema?
+- repetir formato?
+- transformar em carrossel?
+- aprofundar tecnicamente?
+- trazer bastidores?
+- propor sequência?
+
+## 8. Sugestões de próximos conteúdos
+Gerar 3 a 5 ideias de posts futuros baseadas neste aprendizado.
+
+## 9. Recomendação para o CMO Agent
+Escrever um bloco curto que possa ser usado no planejamento da próxima semana.
+
+Regras do texto:
+- português do Brasil
+- direto
+- estratégico
+- sem inventar números
+- sem afirmar causalidade sem dados
+- separar claramente opinião editorial de dado observado
+"""
+        
+        try:
+            markdown_content = self.llm.generate_content("Você é o Editorial Learning Agent do BrandOS, especialista em marketing.", prompt)
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao gerar aprendizado no LLM: {str(e)}"}
+            
+        # Salvar arquivo
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(markdown_content)
+            
+        # Atualizar JSON
+        target_item["editorial_learning_status"] = "generated"
+        target_item["editorial_learning_file"] = rel_filepath
+        target_item["editorial_learning_generated_at"] = now
+        target_item["updated_at"] = now
+        if notes:
+            target_item["notes_provided"] = True
+            
+        history_list = target_item.get("editorial_learning_history", [])
+        history_list.append({
+            "event": "learning_generated",
+            "generated_at": now,
+            "file": rel_filepath,
+            "source": "manual_trigger"
+        })
+        target_item["editorial_learning_history"] = history_list
+        
+        self.history_repo.save(history)
+        
+        return {
+            "status": "success",
+            "learning_file": rel_filepath,
+            "item_id": item_id,
+            "generated_at": now
+        }
+
+
+    def get_latest_strategic_memory(self) -> dict:
+        import os, json
+        
+        mem_dir = os.path.join(self.base_dir, "data", "generated", "strategic-memory")
+        index_path = os.path.join(mem_dir, "index.json")
+        
+        if not os.path.exists(index_path):
+            return None
+            
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            return None
+            
+        memories = data.get("memories", [])
+        if not memories:
+            return None
+            
+        # Ordenar por data de geracao descendente
+        memories.sort(key=lambda x: x.get("generated_at", ""), reverse=True)
+        latest = memories[0]
+        
+        # Ler o arquivo correspondente
+        file_path = latest.get("file")
+        if file_path:
+            abs_path = os.path.join(self.base_dir, file_path.replace("/", os.sep))
+            if os.path.exists(abs_path):
+                with open(abs_path, "r", encoding="utf-8") as f:
+                    latest["content"] = f.read()
+            else:
+                latest["content"] = "Arquivo não encontrado no sistema."
+        else:
+            latest["content"] = "Nenhum arquivo especificado."
+            
+        return latest
+
+    def generate_strategic_memory(self, confirm: bool = True, window_days: int = 30, notes: str = None) -> dict:
+        import os, json, tempfile, shutil
+        import datetime
+        import zoneinfo
+        
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        if not isinstance(window_days, int) or window_days < 7 or window_days > 180:
+            return {"status": "error", "message": "O parâmetro window_days deve ser um número inteiro entre 7 e 180."}
+            
+        # Ler publication-log de forma segura, SOMENTE LEITURA
+        # NUNCA usar self.history_repo.save()
+        history = self.history_repo.load()
+        if not history:
+            return {"status": "error", "message": "Registry vazio."}
+            
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_aware = datetime.datetime.now(tz)
+        cutoff_date = now_aware - datetime.timedelta(days=window_days)
+        
+        qualified_posts = []
+        
+        for entry in history:
+            for item in entry.get("items", []):
+                if item.get("status") != "published":
+                    continue
+                    
+                is_main, _ = self._is_main_publication(item)
+                if not is_main:
+                    continue
+                    
+                # Excluir explicitamente itens técnicos apenas por garantia (is_main deve pegar isso, mas seguindo requisitos rigorosamente)
+                if item.get("status") == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
+                    continue
+                    
+                title = item.get("title", "Sem título").lower()
+                if any(x in title for x in ["briefing", "recommendation", "instrução", "prompt", "teste", "técnico"]):
+                    continue
+                    
+                # Filtro por data
+                published_at_str = item.get("published_at")
+                fallback_flag = False
+                pub_dt = None
+                
+                if published_at_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(published_at_str.replace("Z", "+00:00"))
+                        pub_dt = dt if dt.tzinfo else dt.replace(tzinfo=tz)
+                    except Exception:
+                        fallback_flag = True
+                else:
+                    fallback_flag = True
+                    
+                if not fallback_flag and pub_dt:
+                    if pub_dt < cutoff_date:
+                        continue  # Fora da janela
+                
+                # Se cair no fallback, incluímos opcionalmente mas marcamos (como sugerido)
+                item["_is_fallback"] = fallback_flag
+                
+                qualified_posts.append(item)
+                
+        # Preparar dados para o prompt
+        source_learning_count = 0
+        posts_context = []
+        
+        for p in qualified_posts:
+            p_data = {
+                "titulo": p.get("title", "Sem título"),
+                "tipo": p.get("format", "Não especificado"),
+                "published_at": p.get("published_at", "Ausente"),
+                "url": p.get("published_url", "Ausente"),
+                "tracking_status": p.get("post_publish_tracking_status", "Nenhum"),
+                "has_metrics": False,
+                "has_learning": False,
+                "metrics_data": p.get("metrics", {}).get("latest", {})
+            }
+            if p_data["metrics_data"]:
+                p_data["has_metrics"] = True
+                
+            learning_file = p.get("editorial_learning_file")
+            if learning_file:
+                abs_learning = os.path.join(self.base_dir, learning_file.replace("/", os.sep))
+                if os.path.exists(abs_learning):
+                    with open(abs_learning, "r", encoding="utf-8") as f:
+                        p_data["learning_content"] = f.read()
+                        p_data["has_learning"] = True
+                        source_learning_count += 1
+                        
+            analysis_file = p.get("post_publish_analysis_file")
+            if analysis_file:
+                abs_analysis = os.path.join(self.base_dir, analysis_file.replace("/", os.sep))
+                if os.path.exists(abs_analysis):
+                    with open(abs_analysis, "r", encoding="utf-8") as f:
+                        p_data["analysis_content"] = f.read()
+                        
+            posts_context.append(p_data)
+            
+        metrics_limitada = ""
+        # Verifica se pelo menos 30% dos posts possuem metricas, senao injeta a limitacao
+        if len(qualified_posts) == 0:
+            return {"status": "error", "message": "Nenhum post publicado principal encontrado na janela fornecida."}
+            
+        metrics_ratio = sum(1 for p in posts_context if p["has_metrics"]) / len(posts_context)
+        if metrics_ratio < 0.5:
+            metrics_limitada = "\nA memória estratégica está limitada porque ainda há poucas métricas importadas."
+            
+        prompt = f"""Você é o Strategic Memory Agent do BrandOS.
+
+Sua tarefa é transformar aprendizados editoriais, métricas manuais, análises qualitativas e histórico de posts publicados em uma memória estratégica para orientar o CMO Agent.
+
+Não invente métricas.
+Não invente resultado.
+Não afirmar que algo funcionou sem evidência.
+Separe:
+- dado observado
+- leitura editorial
+- hipótese estratégica
+- recomendação prática
+
+{metrics_limitada}
+
+### DADOS DOS POSTS ({len(qualified_posts)} analisados nos últimos {window_days} dias):
+"""
+        for idx, p in enumerate(posts_context):
+            prompt += f"\n\n--- POST {idx+1} ---\n"
+            prompt += f"Título: {p['titulo']}\n"
+            prompt += f"Data: {p['published_at']}\n"
+            prompt += f"URL: {p['url']}\n"
+            if p.get("metrics_data"):
+                prompt += f"Métricas: {json.dumps(p['metrics_data'], ensure_ascii=False)}\n"
+            if p.get("learning_content"):
+                prompt += f"\nAPRENDIZADO EDITORIAL:\n{p['learning_content']}\n"
+            if p.get("analysis_content"):
+                prompt += f"\nANÁLISE QUALITATIVA:\n{p['analysis_content']}\n"
+
+        if notes:
+            prompt += f"\n\n### NOTAS DIRECIONAIS:\n{notes}\n"
+
+        prompt += """
+
+Gerar relatório em Markdown EXATAMENTE com estas seções:
+
+# Memória Estratégica do CMO Agent
+
+## 1. Resumo executivo
+
+## 2. Posts considerados
+
+## 3. Padrões percebidos
+
+## 4. Sinais positivos
+
+## 5. Sinais de atenção
+
+## 6. Temas que merecem continuidade
+
+## 7. Temas ou abordagens a evitar
+
+## 8. Recomendações para a próxima semana
+
+## 9. Briefing estratégico para o CMO Agent
+
+## 10. Limitações da memória
+
+Tom:
+- português do Brasil
+- direto
+- estratégico
+- sem floreio
+- sem prometer resultado
+- sem inventar dados
+"""
+
+        system_prompt = "Você é o Strategic Memory Agent do BrandOS."
+        try:
+            markdown_content = self.llm.generate_content(system_prompt, prompt)
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao gerar memória estratégica no LLM: {str(e)}"}
+            
+        # Preparar pastas e salvar markdown localmente
+        mem_dir = os.path.join(self.base_dir, "data", "generated", "strategic-memory")
+        os.makedirs(mem_dir, exist_ok=True)
+        
+        now = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+        date_str = datetime.datetime.now(tz).strftime("%Y-%m-%d")
+        timestamp_str = datetime.datetime.now(tz).strftime("%Y%m%d-%H%M%S")
+        memory_id = f"strategic-memory-{timestamp_str}"
+        
+        filename = f"{date_str}-{memory_id}.md"
+        filepath = os.path.join(mem_dir, filename)
+        rel_filepath = os.path.join("data", "generated", "strategic-memory", filename).replace("\\", "/")
+        
+        # 12. Escrita Segura MD
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(markdown_content)
+            
+        # Atualizar index.json atomicamente
+        index_path = os.path.join(mem_dir, "index.json")
+        index_data = {"memories": []}
+        
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, "r", encoding="utf-8") as f:
+                    index_data = json.load(f)
+                    if not isinstance(index_data, dict) or "memories" not in index_data:
+                        raise ValueError("Estrutura inválida.")
+            except Exception as e:
+                # E: index corrompido -> fazer backup e resetar
+                backup_path = index_path + f".backup-{timestamp_str}"
+                shutil.copy2(index_path, backup_path)
+                index_data = {"memories": []}
+                
+        new_entry = {
+            "id": memory_id,
+            "file": rel_filepath,
+            "generated_at": now,
+            "window_days": window_days,
+            "source_posts_count": len(qualified_posts),
+            "source_learning_count": source_learning_count,
+            "notes_provided": bool(notes)
+        }
+        
+        index_data["memories"].append(new_entry)
+        
+        fd, temp_path = tempfile.mkstemp(dir=mem_dir)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(index_data, f, indent=4, ensure_ascii=False)
+            os.replace(temp_path, index_path)
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return {"status": "error", "message": f"Erro ao atualizar index.json: {str(e)}"}
+            
+        return {
+            "status": "success",
+            "memory_file": rel_filepath,
+            "memory_id": memory_id,
+            "generated_at": now,
+            "source_posts_count": len(qualified_posts),
+            "source_learning_count": source_learning_count
+        }
+
+
+    def generate_cmo_recommendation_with_memory(self, confirm: bool = True, window_days: int = 30, notes: str = None) -> dict:
+        import os, json, tempfile, shutil
+        import datetime
+        import zoneinfo
+        
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        if not isinstance(window_days, int) or window_days < 7 or window_days > 180:
+            return {"status": "error", "message": "O parâmetro window_days deve ser um número inteiro entre 7 e 180."}
+            
+        # 1. Carregar Memória Estratégica (Read-only)
+        latest_memory = self.get_latest_strategic_memory()
+        memory_content = "Não há memória estratégica suficiente. A recomendação abaixo é preliminar."
+        memory_id = None
+        if latest_memory and latest_memory.get("content"):
+            memory_content = latest_memory["content"]
+            memory_id = latest_memory.get("id")
+            
+        # 2. Ler publication-log de forma segura, SOMENTE LEITURA
+        history = self.history_repo.load()
+        if not history:
+            return {"status": "error", "message": "Registry vazio."}
+            
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_aware = datetime.datetime.now(tz)
+        cutoff_date = now_aware - datetime.timedelta(days=window_days)
+        
+        qualified_posts = []
+        
+        for entry in history:
+            for item in entry.get("items", []):
+                if item.get("status") != "published":
+                    continue
+                    
+                is_main, _ = self._is_main_publication(item)
+                if not is_main:
+                    continue
+                    
+                if item.get("status") == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
+                    continue
+                    
+                title = item.get("title", "Sem título").lower()
+                if any(x in title for x in ["briefing", "recommendation", "instrução", "prompt", "teste", "técnico"]):
+                    continue
+                    
+                published_at_str = item.get("published_at")
+                fallback_flag = False
+                pub_dt = None
+                
+                if published_at_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(published_at_str.replace("Z", "+00:00"))
+                        pub_dt = dt if dt.tzinfo else dt.replace(tzinfo=tz)
+                    except Exception:
+                        fallback_flag = True
+                else:
+                    fallback_flag = True
+                    
+                if not fallback_flag and pub_dt:
+                    if pub_dt < cutoff_date:
+                        continue  # Fora da janela
+                
+                qualified_posts.append(item)
+                
+        # 3. Preparar dados para o prompt
+        source_learning_count = 0
+        posts_context = []
+        
+        for p in qualified_posts:
+            p_data = {
+                "titulo": p.get("title", "Sem título"),
+                "tipo": p.get("format", "Não especificado"),
+                "published_at": p.get("published_at", "Ausente"),
+                "url": p.get("published_url", "Ausente"),
+                "tracking_status": p.get("post_publish_tracking_status", "Nenhum"),
+                "has_metrics": False
+            }
+            metrics_data = p.get("metrics", {}).get("latest", {})
+            if metrics_data:
+                p_data["metrics_data"] = metrics_data
+                p_data["has_metrics"] = True
+                
+            learning_file = p.get("editorial_learning_file")
+            if learning_file:
+                abs_learning = os.path.join(self.base_dir, learning_file.replace("/", os.sep))
+                if os.path.exists(abs_learning):
+                    with open(abs_learning, "r", encoding="utf-8") as f:
+                        p_data["learning_content"] = f.read()
+                        source_learning_count += 1
+                        
+            analysis_file = p.get("post_publish_analysis_file")
+            if analysis_file:
+                abs_analysis = os.path.join(self.base_dir, analysis_file.replace("/", os.sep))
+                if os.path.exists(abs_analysis):
+                    with open(abs_analysis, "r", encoding="utf-8") as f:
+                        p_data["analysis_content"] = f.read()
+                        
+            posts_context.append(p_data)
+            
+        metrics_limitada = ""
+        if len(posts_context) > 0:
+            metrics_ratio = sum(1 for p in posts_context if p["has_metrics"]) / len(posts_context)
+            if metrics_ratio < 0.5:
+                metrics_limitada = "\nA recomendação está limitada porque ainda há poucas métricas importadas."
+        else:
+            metrics_limitada = "\nA recomendação está limitada porque ainda há poucas métricas importadas."
+
+        # 4. Construção do Prompt do CMO Agent
+        system_prompt = "Você é o CMO Agent do BrandOS."
+        
+        prompt = f"""Sua tarefa é gerar uma recomendação estratégica para a próxima semana editorial, usando a memória estratégica mais recente e os dados locais disponíveis.
+
+Você não deve gerar posts finais.
+Você não deve criar calendário automaticamente.
+Você não deve publicar nada.
+Você não deve inventar métricas.
+Você não deve afirmar que algo funcionou sem evidência.
+
+Você deve separar claramente:
+- dado observado
+- hipótese editorial
+- recomendação prática
+- limitação da análise
+
+### MEMÓRIA ESTRATÉGICA ATUAL:
+{memory_content}
+
+{metrics_limitada}
+
+### DADOS RECENTES DOS ÚLTIMOS {window_days} DIAS ({len(posts_context)} posts analisados):
+"""
+        for idx, p in enumerate(posts_context):
+            prompt += f"\n--- POST RECENTE {idx+1} ---\n"
+            prompt += f"Título: {p['titulo']}\n"
+            if p.get("metrics_data"):
+                prompt += f"Métricas: {json.dumps(p['metrics_data'], ensure_ascii=False)}\n"
+            if p.get("learning_content"):
+                prompt += f"\nAPRENDIZADO:\n{p.get('learning_content')}\n"
+            if p.get("analysis_content"):
+                prompt += f"\nANÁLISE:\n{p.get('analysis_content')}\n"
+
+        if notes:
+            prompt += f"\n\n### NOTAS DO USUÁRIO:\n{notes}\n"
+
+        prompt += """
+Gerar relatório em Markdown EXATAMENTE com estas seções:
+
+# Recomendação Estratégica da Próxima Semana
+
+## 1. Diagnóstico rápido
+## 2. O que aprendemos até agora
+## 3. O que continuar
+## 4. O que evitar
+## 5. Temas recomendados para a próxima semana
+## 6. Formatos recomendados
+## 7. Sugestão de agenda semanal
+## 8. Briefing recomendado para aprovação humana
+## 9. Riscos e cuidados
+## 10. Próxima ação sugerida
+
+Tom:
+- português do Brasil
+- direto
+- estratégico
+- prático
+- sem floreio
+- sem prometer resultado
+- sem inventar dados
+"""
+
+        try:
+            markdown_content = self.llm.generate_content(system_prompt, prompt)
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao gerar recomendação do CMO Agent no LLM: {str(e)}"}
+            
+        # 5. Salvar recomendação
+        cmo_dir = os.path.join(self.base_dir, "data", "generated", "cmo-recommendations")
+        os.makedirs(cmo_dir, exist_ok=True)
+        
+        now = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+        date_str = datetime.datetime.now(tz).strftime("%Y-%m-%d")
+        timestamp_str = datetime.datetime.now(tz).strftime("%Y%m%d-%H%M%S")
+        recommendation_id = f"cmo-recommendation-memory-{timestamp_str}"
+        
+        filename = f"{date_str}-{recommendation_id}.md"
+        filepath = os.path.join(cmo_dir, filename)
+        rel_filepath = os.path.join("data", "generated", "cmo-recommendations", filename).replace("\\", "/")
+        
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(markdown_content)
+            
+        # 6. Atualizar index.json das recomendações
+        index_path = os.path.join(cmo_dir, "index.json")
+        index_data = {"recommendations": []}
+        
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, "r", encoding="utf-8") as f:
+                    index_data = json.load(f)
+                    if not isinstance(index_data, dict) or "recommendations" not in index_data:
+                        raise ValueError("Estrutura inválida.")
+            except Exception as e:
+                # Backup em caso de corrompimento
+                backup_path = index_path + f".backup-{timestamp_str}"
+                shutil.copy2(index_path, backup_path)
+                index_data = {"recommendations": []}
+                
+        new_entry = {
+            "id": recommendation_id,
+            "file": rel_filepath,
+            "generated_at": now,
+            "window_days": window_days,
+            "used_strategic_memory": bool(memory_id),
+            "strategic_memory_id": memory_id,
+            "source_posts_count": len(qualified_posts),
+            "source_learning_count": source_learning_count,
+            "notes_provided": bool(notes),
+            "status": "draft_recommendation"
+        }
+        
+        index_data["recommendations"].append(new_entry)
+        
+        fd, temp_path = tempfile.mkstemp(dir=cmo_dir)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(index_data, f, indent=4, ensure_ascii=False)
+            os.replace(temp_path, index_path)
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            return {"status": "error", "message": f"Erro ao atualizar index.json: {str(e)}"}
+            
+        return {
+            "status": "success",
+            "recommendation_file": rel_filepath,
+            "recommendation_id": recommendation_id,
+            "generated_at": now,
+            "used_strategic_memory": bool(memory_id),
+            "strategic_memory_id": memory_id
+        }
+
+
+
+    def edit_briefing(self, filename: str, new_content: str, confirm: bool = True) -> dict:
+        import os, tempfile, shutil
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária para edição."}
+            
+        briefings_dir = os.path.join(self.base_dir, "data", "generated", "briefings")
+        file_path = os.path.join(briefings_dir, filename)
+        if not os.path.exists(file_path):
+            return {"status": "error", "message": "Briefing não encontrado."}
+            
+        # Backup
+        backup_path = file_path + ".bak"
+        shutil.copy2(file_path, backup_path)
+        
+        try:
+            fd, temp_path = tempfile.mkstemp(dir=briefings_dir, text=True)
+            with os.fdopen(fd, 'w', encoding='utf-8') as tf:
+                tf.write(new_content)
+            os.replace(temp_path, file_path)
+        except Exception as e:
+            if os.path.exists(backup_path):
+                shutil.copy2(backup_path, file_path)
+            return {"status": "error", "message": f"Erro na edição: {e}"}
+            
+        return {"status": "success", "message": "Briefing atualizado com sucesso."}
+
+    def approve_briefing(self, filename: str, confirm: bool = True, user: str = "BrandOS User") -> dict:
+        import os, tempfile, shutil, datetime, zoneinfo, re
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        briefings_dir = os.path.join(self.base_dir, "data", "generated", "briefings")
+        file_path = os.path.join(briefings_dir, filename)
+        if not os.path.exists(file_path):
+            return {"status": "error", "message": "Briefing não encontrado."}
+            
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        status_match = re.search(r'^Status:\s*(.*)$', content, re.MULTILINE | re.IGNORECASE)
+        if not status_match:
+            return {"status": "error", "message": "Status não encontrado no arquivo."}
+            
+        current_status = status_match.group(1).strip().lower()
+        if current_status not in ['draft', 'reviewed']:
+            return {"status": "error", "message": f"Não é possível aprovar um briefing com status '{current_status}'."}
+            
+        # Modifica status
+        content = re.sub(r'^(Status:\s*).*$', r'Status: approved', content, flags=re.MULTILINE | re.IGNORECASE)
+        
+        # Adiciona Data de aprovação
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now_str = datetime.datetime.now(tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+        
+        lines = content.split('\\n')
+        # Procura onde inserir (depois do header existente)
+        insert_idx = -1
+        for i, line in enumerate(lines):
+            if line.startswith("## ") or line.startswith("# 1."):
+                insert_idx = i
+                break
+        
+        if insert_idx == -1:
+            insert_idx = len(lines)
+            
+        while insert_idx > 0 and lines[insert_idx-1].strip() == '':
+            insert_idx -= 1
+            
+        approval_meta = [f"Data de aprovação: {now_str}", f"Aprovado por: {user}"]
+        lines = lines[:insert_idx] + approval_meta + [""] + lines[insert_idx:]
+        
+        new_content = "\\n".join(lines)
+        
+        # Backup and Save
+        backup_path = file_path + ".bak"
+        shutil.copy2(file_path, backup_path)
+        
+        try:
+            fd, temp_path = tempfile.mkstemp(dir=briefings_dir, text=True)
+            with os.fdopen(fd, 'w', encoding='utf-8') as tf:
+                tf.write(new_content)
+            os.replace(temp_path, file_path)
+        except Exception as e:
+            if os.path.exists(backup_path):
+                shutil.copy2(backup_path, file_path)
+            return {"status": "error", "message": f"Erro ao aprovar: {e}"}
+            
+        return {"status": "success", "message": "Briefing aprovado com sucesso."}
+
+    def create_briefing_from_cmo_recommendation(self, recommendation_id: str, confirm: bool = True, notes: str = None) -> dict:
+        import os, json
+        import datetime
+        import zoneinfo
+        import re
+        
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        cmo_index_path = os.path.join(self.base_dir, "data", "generated", "cmo-recommendations", "index.json")
+        if not os.path.exists(cmo_index_path):
+            return {"status": "error", "message": "Índice de recomendações do CMO não encontrado."}
+            
+        target_rec = None
+        try:
+            with open(cmo_index_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for rec in data.get("recommendations", []):
+                    if rec.get("id") == recommendation_id:
+                        target_rec = rec
+                        break
+        except Exception as e:
+            return {"status": "error", "message": f"Erro ao ler índice: {e}"}
+            
+        if not target_rec:
+            return {"status": "error", "message": "Recomendação não encontrada."}
+            
+        file_rel = target_rec.get("file")
+        if not file_rel:
+            return {"status": "error", "message": "Arquivo de recomendação inválido."}
+            
+        rec_path = os.path.join(self.base_dir, file_rel.replace("/", os.sep))
+        if not os.path.exists(rec_path):
+            return {"status": "error", "message": "Arquivo físico da recomendação não encontrado."}
+            
+        with open(rec_path, "r", encoding="utf-8") as f:
+            md_content = f.read()
+            
+        def extract_section(text, section_title):
+            pattern = re.compile(rf"##\s+\d+\.\s*{re.escape(section_title)}.*?\n(.*?)(?=\n##\s+\d+\.|$)", re.DOTALL | re.IGNORECASE)
+            match = pattern.search(text)
+            if match:
+                return match.group(1).strip()
+            return "Seção não encontrada na recomendação original."
+            
+        contexto_estrat = extract_section(md_content, "Diagnóstico rápido") + "\n\n" + extract_section(md_content, "O que aprendemos até agora")
+        objetivo = extract_section(md_content, "Briefing recomendado para aprovação humana")
+        temas = extract_section(md_content, "Temas recomendados para a próxima semana")
+        formatos = extract_section(md_content, "Formatos recomendados")
+        agenda = extract_section(md_content, "Sugestão de agenda semanal")
+        continuar = extract_section(md_content, "O que continuar")
+        evitar = extract_section(md_content, "O que evitar")
+        riscos = extract_section(md_content, "Riscos e cuidados")
+        
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now = datetime.datetime.now(tz)
+        timestamp_str = now.strftime("%Y%m%d-%H%M%S")
+        date_str = now.strftime("%Y-%m-%d")
+        created_at = now.strftime("%Y-%m-%dT%H:%M:%S%z")
+        
+        safe_rec_id = re.sub(r'[^a-zA-Z0-9_-]', '', recommendation_id)
+        
+        briefing_filename = f"{date_str}-briefing-from-cmo-{safe_rec_id}-{timestamp_str}.md"
+        briefings_dir = os.path.join(self.base_dir, "data", "generated", "briefings")
+        os.makedirs(briefings_dir, exist_ok=True)
+        
+        briefing_path = os.path.join(briefings_dir, briefing_filename)
+        
+        obs_humanas = notes if notes else "Nenhuma observação humana adicional informada."
+        
+        briefing_md = f"""# Briefing Base — CMO Agent
+
+Status: draft
+Fonte: CMO Recommendation
+Recommendation ID: {recommendation_id}
+Data de criação: {created_at}
+Origem técnica: cmo_recommendation
+
+## 1. Contexto estratégico
+
+{contexto_estrat}
+
+## 2. Objetivo da semana
+
+{objetivo}
+
+## 3. Temas sugeridos
+
+{temas}
+
+## 4. Formatos sugeridos
+
+{formatos}
+
+## 5. Agenda sugerida
+
+{agenda}
+
+## 6. Diretrizes editoriais
+
+### O que continuar
+{continuar}
+
+### O que evitar
+{evitar}
+
+### Riscos e cuidados
+{riscos}
+
+## 7. Observações humanas
+
+{obs_humanas}
+
+## 8. Fonte original
+
+Recommendation ID: {recommendation_id}
+Arquivo original: {file_rel}
+
+## 9. Próxima ação
+
+Revisar, editar e aprovar este briefing antes de gerar qualquer semana editorial.
+"""
+
+        if os.path.exists(briefing_path):
+            return {"status": "error", "message": "Arquivo já existe, evitando sobrescrita."}
+            
+        with open(briefing_path, "w", encoding="utf-8") as f:
+            f.write(briefing_md)
+            
+        return {
+            "status": "success",
+            "briefing_file": f"data/generated/briefings/{briefing_filename}",
+            "briefing_filename": briefing_filename,
+            "recommendation_id": recommendation_id,
+            "created_at": created_at
+        }
+
+    def mark_manual_published(self, item_id: str, payload: dict) -> dict:
+        import datetime, zoneinfo
+        history = self.history_repo.load()
+        if not history:
+            raise ValueError("Registry vazio")
+            
+        target_item = None
+        target_entry = None
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for item in items_to_process:
+                ident = self._get_item_identifier(item)
+                if ident == item_id:
+                    target_item = item
+                    target_entry = entry
+                    break
+            if target_item:
+                break
+                
+        if not target_item:
+            raise ValueError("Item não encontrado")
+            
+        status = target_item.get("status")
+        if status in ["published", "discarded", "used_as_asset"]:
+            raise ValueError(f"Status inválido para publicação manual: {status}")
+        if target_item.get("linked_to_item_id") or target_item.get("asset_role"):
+            raise ValueError("Não é possível publicar um asset vinculado")
+            
+        tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
+        now = datetime.datetime.now(tz).isoformat()
+        
+        previous_status = target_item.get("status")
+        
+        target_item["status"] = "published"
+        target_item["previous_status"] = previous_status
+        target_item["published_at"] = payload.get("published_at") or now
+        if payload.get("published_url"):
+            target_item["published_url"] = payload.get("published_url")
+            
+        target_item["published_by"] = "human"
+        target_item["publication_source"] = "manual_linkedin"
+        target_item["manual_override"] = True
+        target_item["updated_at"] = now
+        
+        pub_history = target_item.get("publication_history", [])
+        pub_history.append({
+            "event": "manual_mark_published",
+            "timestamp": now,
+            "previous_status": previous_status,
+            "new_status": "published"
+        })
+        target_item["publication_history"] = pub_history
+        
+        self.history_repo.save(history)
+        return target_item
+
     def get_ops_dashboard(self) -> dict:
         import os, json
         from datetime import datetime, timedelta
@@ -1449,24 +2659,35 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         
         counts = {
             "total_main_posts": 0,
+            "draft_count": 0,
             "generated_count": 0,
             "edited_count": 0,
             "approved_count": 0,
             "scheduled_count": 0,
+            "publishing_ready_count": 0,
             "published_count": 0,
+            "discarded_count": 0,
             "pending_count": 0,
             "without_date_count": 0,
             "overdue_count": 0,
             "ready_to_schedule_count": 0,
-            "scheduled_next_7_days_count": 0
+            "scheduled_next_7_days_count": 0,
+            "waiting_metrics_count": 0,
+            "metrics_imported_count": 0,
+            "analysis_generated_count": 0,
+            "completed_count": 0,
+            "learnings_generated_count": 0
         }
         
         pipeline_groups = {
+            "draft": [],
             "generated": [],
             "edited": [],
             "approved": [],
             "scheduled": [],
-            "published": []
+            "publishing_ready": [],
+            "published": [],
+            "discarded": []
         }
         
         lists = {
@@ -1474,92 +2695,138 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             "ready_to_schedule": [],
             "pending_reviews": [],
             "overdue": [],
-            "warnings": []
+            "warnings": [],
+            "ignored_items": []
         }
         
-        if not os.path.exists(log_path):
-            return {"counts": counts, "pipeline_groups": pipeline_groups, "lists": lists, "error": "publication-log.json não encontrado."}
-            
-        with open(log_path, "r", encoding="utf-8") as f:
-            try:
-                log_data = json.load(f)
-            except json.JSONDecodeError:
-                return {"counts": counts, "pipeline_groups": pipeline_groups, "lists": lists, "error": "publication-log.json inválido."}
+        post_publish_groups = {
+            "waiting_24h_metrics": [],
+            "waiting_48h_metrics": [],
+            "waiting_7d_metrics": [],
+            "metrics_imported": [],
+            "analysis_generated": [],
+            "completed": []
+        }
+        
+        history = self.history_repo.load()
+        if not history:
+            return {"counts": counts, "pipeline_groups": pipeline_groups, "lists": lists, "error": "publication-log.json vazio ou não encontrado."}
                 
         tz = zoneinfo.ZoneInfo("America/Sao_Paulo")
         now_aware = datetime.now(tz)
         today_str = now_aware.strftime("%Y-%m-%d")
-        next_7_days = [(now_aware + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(8)] # Include today up to 7 days ahead
+        next_7_days = [(now_aware + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(8)]
         
-        for item in log_data:
-            if self._is_asset(item):
-                continue
+        for entry in history:
+            # support loose items at the root of history
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for item in items_to_process:
+                identifier = self._get_item_identifier(item)
+                item["identifier"] = identifier
                 
-            counts["total_main_posts"] += 1
-            status = item.get("status", "unknown")
-            
-            # Basic status counts
-            if status == "generated": counts["generated_count"] += 1
-            elif status == "edited": counts["edited_count"] += 1
-            elif status == "approved": counts["approved_count"] += 1
-            elif status == "scheduled": counts["scheduled_count"] += 1
-            elif status == "published": counts["published_count"] += 1
-            
-            if status in ["generated", "edited"]:
-                counts["pending_count"] += 1
-                lists["pending_reviews"].append(item)
-                
-            # Date logic
-            sched_at = item.get("scheduled_at")
-            sched_date = item.get("scheduled_date")
-            sched_time = item.get("scheduled_time")
-            sched_for = item.get("scheduled_for")
-            pub_at = item.get("published_at")
-            
-            # Pipeline population
-            if status in pipeline_groups:
-                pipeline_groups[status].append(item)
-                
-            # Without date
-            if not sched_at and not sched_date and not sched_for and not pub_at:
-                counts["without_date_count"] += 1
-                
-            # Ready to schedule
-            if status == "approved" and not sched_at and not sched_date:
-                counts["ready_to_schedule_count"] += 1
-                lists["ready_to_schedule"].append(item)
-                
-            # Resolve unified date string for calculations
-            target_date_str = None
-            target_dt_aware = None
-            
-            if sched_at:
-                target_date_str = sched_at[:10]
-                try:
-                    dt_obj = datetime.strptime(sched_at, "%Y-%m-%dT%H:%M:%S")
-                    target_dt_aware = dt_obj.replace(tzinfo=tz)
-                except ValueError:
-                    lists["warnings"].append({"message": f"Erro de parse em scheduled_at no item {item.get('item_id', 'sem id')}", "item": item})
-            elif sched_date:
-                target_date_str = sched_date
-                try:
-                    t_str = sched_time if sched_time else "00:00"
-                    dt_obj = datetime.strptime(f"{sched_date}T{t_str}:00", "%Y-%m-%dT%H:%M:%S")
-                    target_dt_aware = dt_obj.replace(tzinfo=tz)
-                except ValueError:
-                    lists["warnings"].append({"message": f"Erro de parse em scheduled_date no item {item.get('item_id', 'sem id')}", "item": item})
+                # Main publication filter Phase 5.2 update
+                is_main, reason = self._is_main_publication(item)
+                if not is_main:
+                    lists["ignored_items"].append({"item": item, "reason": reason})
+                    continue
                     
-            if status == "scheduled" and target_dt_aware:
-                if target_dt_aware < now_aware and not pub_at and status != "published":
-                    counts["overdue_count"] += 1
-                    lists["overdue"].append(item)
-                elif target_date_str in next_7_days:
-                    counts["scheduled_next_7_days_count"] += 1
-                    lists["next_7_days"].append(item)
+                if not identifier:
+                    lists["warnings"].append({"message": "Item sem identificador detectado. Ações desabilitadas até normalização.", "item": item})
                     
-            if not item.get("item_id"):
-                lists["warnings"].append({"message": f"Item sem item_id detectado", "item": item})
+                counts["total_main_posts"] += 1
+                status = item.get("status", "unknown")
                 
+                # Treat missing status as draft
+                if not item.get("status"):
+                    status = "draft"
+                    item["status"] = "draft"
+                    item["_missing_status"] = True # purely for visual cues if needed
+                    
+                # Basic status counts
+                if status == "draft": counts["draft_count"] += 1
+                elif status == "generated": counts["generated_count"] += 1
+                elif status == "edited": counts["edited_count"] += 1
+                elif status == "approved": counts["approved_count"] += 1
+                elif status == "scheduled": counts["scheduled_count"] += 1
+                elif status == "publishing_ready": counts["publishing_ready_count"] += 1
+                elif status == "published": counts["published_count"] += 1
+                elif status == "discarded": counts["discarded_count"] += 1
+                
+                if status in ["draft", "generated", "edited"]:
+                    counts["pending_count"] += 1
+                    lists["pending_reviews"].append(item)
+                    
+                # Date logic
+                sched_at = item.get("scheduled_at")
+                sched_date = item.get("scheduled_date")
+                sched_time = item.get("scheduled_time")
+                sched_for = item.get("scheduled_for")
+                pub_at = item.get("published_at")
+                
+                # Post-publication tracking logic
+                if status == "published":
+                    tracking_status = item.get("post_publish_tracking_status")
+                    if tracking_status:
+                        if tracking_status in post_publish_groups:
+                            post_publish_groups[tracking_status].append(item)
+                            
+                        if tracking_status in ["waiting_24h_metrics", "waiting_48h_metrics", "waiting_7d_metrics"]:
+                            counts["waiting_metrics_count"] += 1
+                        elif tracking_status == "metrics_imported":
+                            counts["metrics_imported_count"] += 1
+                        elif tracking_status == "analysis_generated":
+                            counts["analysis_generated_count"] += 1
+                        elif tracking_status == "completed":
+                            counts["completed_count"] += 1
+
+                # Pipeline population
+                if status in pipeline_groups:
+                    pipeline_groups[status].append(item)
+                    
+
+                # Pós-publicação: Aprendizado Editorial
+                if item.get("editorial_learning_file") or item.get("editorial_learning_status") == "generated":
+                    counts["learnings_generated_count"] += 1
+
+                # Without date
+                if not sched_at and not sched_date and not sched_for and not pub_at and status != "discarded":
+                    counts["without_date_count"] += 1
+                    
+                # Ready to schedule
+                if status == "approved" and not sched_at and not sched_date:
+                    counts["ready_to_schedule_count"] += 1
+                    lists["ready_to_schedule"].append(item)
+                    
+                # Resolve unified date string for calculations
+                target_date_str = None
+                target_dt_aware = None
+                
+                if sched_at:
+                    target_date_str = sched_at[:10]
+                    try:
+                        dt_obj = datetime.fromisoformat(sched_at)
+                        target_dt_aware = dt_obj if dt_obj.tzinfo else dt_obj.replace(tzinfo=tz)
+                    except ValueError:
+                        ident = self._get_item_identifier(item) or "desconhecido"
+                        lists["warnings"].append({"message": f"Item {ident} possui data de agendamento inválida: {sched_at}.", "item": item})
+                elif sched_date:
+                    target_date_str = sched_date
+                    try:
+                        t_str = sched_time if sched_time else "00:00"
+                        dt_obj = datetime.strptime(f"{sched_date}T{t_str[:5]}:00", "%Y-%m-%dT%H:%M:%S")
+                        target_dt_aware = dt_obj.replace(tzinfo=tz)
+                    except ValueError:
+                        ident = self._get_item_identifier(item) or "desconhecido"
+                        lists["warnings"].append({"message": f"Item {ident} possui data de agendamento inválida: {sched_date}.", "item": item})
+                        
+                if status in ["scheduled", "publishing_ready"] and target_dt_aware:
+                    if target_dt_aware < now_aware and not pub_at and status != "published":
+                        counts["overdue_count"] += 1
+                        lists["overdue"].append(item)
+                    elif target_date_str in next_7_days:
+                        counts["scheduled_next_7_days_count"] += 1
+                        lists["next_7_days"].append(item)
+                        
         return {
             "counts": counts,
             "pipeline_groups": pipeline_groups,
@@ -1571,34 +2838,39 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
     def get_publication_assistant(self, item_id: str) -> dict:
         import os, json
         
-        log_path = os.path.join(self.base_dir, "data", "registry", "publication-log.json")
-        if not os.path.exists(log_path):
-            raise ValueError("publication-log.json não encontrado.")
-            
-        with open(log_path, "r", encoding="utf-8") as f:
-            log_data = json.load(f)
-            
+        history = self.history_repo.load()
         target = None
-        for i in log_data:
-            if i.get("item_id") == item_id:
-                target = i
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for i in items_to_process:
+                if self._get_item_identifier(i) == item_id:
+                    target = i
+                    break
+            if target:
                 break
                 
         if not target:
             raise ValueError("Post não encontrado.")
             
-        if self._is_asset(target):
+        if target.get("status") == "used_as_asset" or target.get("linked_to_item_id") or target.get("asset_role"):
             raise ValueError("Assets vinculados não podem ser publicados como publicações principais.")
             
+        if target.get("status") in ["generated", "edited"]:
+            raise ValueError("Este post ainda precisa ser aprovado e agendado antes da publicação manual.")
+            
+        if target.get("status") == "approved":
+            raise ValueError("Este post precisa ser agendado antes de entrar no assistente de publicação.")
+            
         if target.get("status") not in ["scheduled", "publishing_ready", "published"]:
-            raise ValueError("Este post ainda não está agendado para publicação.")
+            raise ValueError("Este post não está agendado ou pronto para publicação.")
             
         assistant_data = {
             "item": target,
             "post_content": "",
             "instructions": "",
             "prompts": "",
-            "linked_assets": []
+            "linked_assets": [],
+            "warning": None
         }
         
         # Load post content
@@ -1608,6 +2880,10 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             if os.path.exists(path):
                 with open(path, "r", encoding="utf-8") as f:
                     assistant_data["post_content"] = f.read()
+            else:
+                assistant_data["warning"] = "Arquivo de conteúdo não encontrado para este post."
+        else:
+            assistant_data["warning"] = "Item sem arquivo de conteúdo vinculado."
                     
         # Load auxiliary instructions if folder exists
         folder = target.get("generated_folder")
@@ -1622,13 +2898,6 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
             if os.path.exists(prompt_path):
                 with open(prompt_path, "r", encoding="utf-8") as f:
                     assistant_data["prompts"] = f.read()
-                    
-        # Load linked assets
-        for i in log_data:
-            if i.get("linked_to_item_id") == item_id or i.get("status") == "used_as_asset":
-                # Very basic linkage check: if it explicitly points to this ID, or we assume it's part of the same folder if we had a more robust check. For now, strictly `linked_to_item_id`.
-                if i.get("linked_to_item_id") == item_id:
-                    assistant_data["linked_assets"].append(i)
                     
         return assistant_data
 
@@ -1799,3 +3068,229 @@ Retorne a resposta em blocos claramente separáveis EXATAMENTE desta forma (use 
         os.replace(temp_path, log_path)
         
         return {"status": "success", "message": "Marcação de publicação desfeita."}
+
+
+    def normalize_registry_item_ids(self) -> dict:
+        """Normaliza itens sem item_id gerando um novo ou usando id existente."""
+        history = self.history_repo.load()
+        if not history:
+            return {"normalized_count": 0, "normalized_items": [], "warnings": ["Histórico vazio."]}
+            
+        import uuid
+        from datetime import datetime
+        
+        normalized_count = 0
+        normalized_items = []
+        warnings = []
+        
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for item in items_to_process:
+                if not item.get("item_id"):
+                    if item.get("id"):
+                        # Use existing id
+                        item["item_id"] = item["id"]
+                    else:
+                        # Generate new
+                        short_uuid = str(uuid.uuid4())[:8]
+                        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+                        item["item_id"] = f"item-{ts}-{short_uuid}"
+                    
+                    item["normalized_at"] = datetime.now().isoformat()
+                    item["normalized_by"] = "system"
+                    
+                    normalized_count += 1
+                    normalized_items.append(item["item_id"])
+                    
+        if normalized_count > 0:
+            self.history_repo.save(history)
+            
+        return {
+            "normalized_count": normalized_count,
+            "normalized_items": normalized_items,
+            "warnings": warnings
+        }
+
+    def preview_invalid_items(self) -> dict:
+        """Retorna suspeitos para descarte em massa."""
+        history = self.history_repo.load()
+        suspects = []
+        
+        if not history:
+            return {"suspects": suspects}
+            
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for item in items_to_process:
+                identifier = self._get_item_identifier(item)
+                title = item.get("title")
+                
+                reason = []
+                if not identifier:
+                    reason.append("Sem identifier")
+                if not title or str(title).strip() == "":
+                    reason.append("Título vazio")
+                elif "Test" in str(title):
+                    reason.append("Contém 'Test' no título")
+                    
+                sched = item.get("scheduled_at")
+                if sched:
+                    try:
+                        from datetime import datetime
+                        datetime.fromisoformat(sched)
+                    except ValueError:
+                        reason.append("Data de agendamento inválida")
+                        
+                if reason:
+                    suspects.append({
+                        "identifier": identifier,
+                        "title": title,
+                        "status": item.get("status"),
+                        "reasons": reason
+                    })
+                    
+        return {"suspects": suspects}
+
+    def discard_items_bulk(self, item_ids: list, reason: str, confirm: bool) -> dict:
+        """Descartar lista explícita de itens."""
+        if not confirm:
+            raise ValueError("Confirmação obrigatória.")
+            
+        history = self.history_repo.load()
+        if not history:
+            raise ValueError("Histórico vazio.")
+            
+        discarded_count = 0
+        from datetime import datetime
+        now_str = datetime.now().isoformat()
+        
+        for entry in history:
+            items_to_process = entry.get("items", []) if "items" in entry else [entry]
+            for item in items_to_process:
+                identifier = self._get_item_identifier(item)
+                if identifier in item_ids:
+                    # Block published/assets
+                    status = item.get("status")
+                    if status == "published":
+                        continue
+                    if status == "used_as_asset" or item.get("linked_to_item_id") or item.get("asset_role"):
+                        continue
+                        
+                    item["status"] = "discarded"
+                    
+                    if "discard_history" not in item:
+                        item["discard_history"] = []
+                        
+                    item["discard_history"].append({
+                        "discarded_at": now_str,
+                        "reason": reason,
+                        "previous_status": status
+                    })
+                    
+                    # Clear operational fields
+                    for field in ["scheduled_at", "scheduled_date", "scheduled_time", "scheduled_for"]:
+                        item.pop(field, None)
+                        
+                    discarded_count += 1
+                    
+        if discarded_count > 0:
+            self.history_repo.save(history)
+            
+        return {"discarded_count": discarded_count}
+
+
+    def start_post_publish_tracking(self, item_id: str, confirm: bool = True) -> dict:
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        history = self.list_history()
+        target_item = None
+        
+        for entry in history:
+            for item in entry.get("items", []):
+                if self._get_item_identifier(item) == item_id:
+                    target_item = item
+                    break
+            if target_item:
+                break
+                
+        if not target_item:
+            return {"status": "error", "message": "Item não encontrado."}
+            
+        if target_item.get("status") != "published":
+            return {"status": "error", "message": "Item precisa estar publicado para iniciar acompanhamento."}
+            
+        is_main, reason = self._is_main_publication(target_item)
+        if not is_main and (target_item.get("status") == "used_as_asset" or target_item.get("linked_to_item_id") or target_item.get("asset_role")):
+            return {"status": "error", "message": "Não é possível iniciar acompanhamento em asset vinculado."}
+            
+        if target_item.get("post_publish_tracking_status"):
+            # Idempotent
+            return {"status": "success", "message": "Acompanhamento já existente."}
+            
+        from datetime import datetime, timedelta
+        
+        published_at_str = target_item.get("published_at")
+        if not published_at_str:
+            print("[WARN] published_at ausente. Usando timestamp atual.")
+            published_at = datetime.now()
+            target_item["published_at"] = published_at.isoformat()
+        else:
+            try:
+                published_at = datetime.fromisoformat(published_at_str.replace("Z", "+00:00"))
+            except Exception:
+                published_at = datetime.now()
+                
+        target_item["post_publish_tracking_status"] = "waiting_24h_metrics"
+        target_item["published_tracking_started_at"] = datetime.now().isoformat()
+        
+        target_item["metrics_due_24h_at"] = (published_at + timedelta(hours=24)).isoformat()
+        target_item["metrics_due_48h_at"] = (published_at + timedelta(hours=48)).isoformat()
+        target_item["metrics_due_7d_at"] = (published_at + timedelta(days=7)).isoformat()
+        target_item["updated_at"] = datetime.now().isoformat()
+        
+        self.save_history(history)
+        return {"status": "success", "message": "Acompanhamento iniciado."}
+
+    def update_post_publish_tracking_status(self, item_id: str, tracking_status: str, confirm: bool = True) -> dict:
+        if not confirm:
+            return {"status": "error", "message": "Confirmação necessária."}
+            
+        valid_statuses = [
+            "waiting_24h_metrics", "waiting_48h_metrics", "waiting_7d_metrics",
+            "metrics_imported", "analysis_generated", "completed"
+        ]
+        
+        if tracking_status not in valid_statuses:
+            return {"status": "error", "message": "Status de acompanhamento inválido."}
+            
+        history = self.list_history()
+        target_item = None
+        
+        for entry in history:
+            for item in entry.get("items", []):
+                if self._get_item_identifier(item) == item_id:
+                    target_item = item
+                    break
+            if target_item:
+                break
+                
+        if not target_item:
+            return {"status": "error", "message": "Item não encontrado."}
+            
+        if target_item.get("status") != "published":
+            return {"status": "error", "message": "Item precisa estar publicado."}
+            
+        is_main, reason = self._is_main_publication(target_item)
+        if not is_main and (target_item.get("status") == "used_as_asset" or target_item.get("linked_to_item_id") or target_item.get("asset_role")):
+            return {"status": "error", "message": "Não é possível atualizar acompanhamento em asset vinculado."}
+            
+        from datetime import datetime
+        target_item["post_publish_tracking_status"] = tracking_status
+        target_item["updated_at"] = datetime.now().isoformat()
+        
+        if tracking_status == "completed":
+            target_item["post_publish_completed_at"] = datetime.now().isoformat()
+            
+        self.save_history(history)
+        return {"status": "success", "message": "Status de acompanhamento atualizado."}

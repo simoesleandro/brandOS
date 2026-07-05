@@ -255,14 +255,45 @@
                 <div class="flex items-center gap-4">
                     <div class="flex flex-col items-end gap-1.5">
                         {{ render_badge(item.status) }}
-                        {% if item.scheduled_for and item.status != 'published' %}
-                        <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 px-3 py-1 text-[10px]">Agendado</span>
+                        {% if item.status == 'scheduled' %}
+                            <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 px-3 py-1 text-[10px]">SCHEDULED</span>
+                            {% if item.scheduled_date %}
+                            <span class="text-[10px] text-brandAccentPurple border border-brandAccentPurple/30 px-2 py-0.5 rounded bg-brandAccentPurple/10 font-mono">
+                                🗓️ {{ item.scheduled_date }} {{ item.scheduled_time }}
+                            </span>
+                            {% endif %}
+                        {% elif item.scheduled_for and item.status != 'published' %}
+                            <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 px-3 py-1 text-[10px]">Agendado</span>
+                        {% elif item.status == 'approved' and not item.scheduled_date %}
+                            <span class="text-[10px] text-brandMuted italic">Aprovado, sem data</span>
                         {% endif %}
                     </div>
                     
-                    <a href="{{ item.url }}" class="btn btn-ghost border-brandBorder/50 text-brandSecondary hover:text-white px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {% if item.source == 'generated_from_briefing' and item.generated_folder %}
+                        {% if not item.linked_to_item_id and not item.asset_role and item.status != 'used_as_asset' %}
+                            {% if item.status == 'approved' %}
+                                <button onclick="openScheduleModal('{{ item.item_id }}')" class="btn-primary bg-brandAccentPurple hover:bg-brandAccentPurple/80 px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                    Agendar
+                                </button>
+                            {% elif item.status == 'scheduled' %}
+                                <button onclick="openScheduleModal('{{ item.item_id }}', true)" class="btn-secondary px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                    Reagendar
+                                </button>
+                                <button onclick="unschedulePost('{{ item.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 border border-red-500/30 px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                    Remover agendamento
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn btn-secondary px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
+                            REVISAR SEMANA
+                            <svg class="w-3.5 h-3.5 ml-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{{ item.url }}" class="btn btn-ghost border-brandBorder/50 text-brandSecondary hover:text-white px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
                         ABRIR PEÇA
-                        <svg class="w-4 h-4 ml-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        <svg class="w-3.5 h-3.5 ml-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </a>
                 </div>
             </div>
@@ -297,8 +328,145 @@
 {% if groups.passadas %}
 {{ render_group("Atrasadas / Pendentes no passado", groups.passadas, "") }}
 {% endif %}
+
 {{ render_group("Publicadas", groups.publicadas, "Nenhuma peça foi publicada ainda.") }}
+
+{% if groups.descartadas %}
+<div class="mt-8 border-t border-brandBorder/50 pt-8">
+    <details class="group">
+        <summary class="cursor-pointer text-xs font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 flex items-center gap-2 list-none">
+            <svg class="w-4 h-4 transform transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            Descartadas <span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px]">{{ groups.descartadas|length }}</span>
+        </summary>
+        <div class="mt-4">
+            {{ render_group("", groups.descartadas, "") }}
+        </div>
+    </details>
+</div>
+{% endif %}
+
 
 {% endif %}
 
+
+<!-- Schedule Modal -->
+<div id="schedule-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+    <div class="bg-[#020205] border border-brandBorder rounded-lg p-6 w-96 max-w-[90vw]">
+        <h3 id="schedule-modal-title" class="text-lg font-bold text-white mb-4">Agendar Post</h3>
+        <input type="hidden" id="schedule-item-id">
+        <input type="hidden" id="schedule-is-reschedule">
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Data (YYYY-MM-DD)</label>
+                <input type="date" id="schedule-date" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Horário (HH:MM)</label>
+                <input type="time" id="schedule-time" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end gap-3 mt-6">
+            <button onclick="closeScheduleModal()" class="btn-ghost text-brandMuted hover:text-white px-4 py-2 text-sm">Cancelar</button>
+            <button onclick="submitSchedule()" class="btn-primary px-4 py-2 text-sm bg-brandAccentPurple hover:bg-brandAccentPurple/80">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openScheduleModal(itemId, isReschedule = false) {
+        document.getElementById('schedule-item-id').value = itemId;
+        document.getElementById('schedule-is-reschedule').value = isReschedule ? 'true' : 'false';
+        document.getElementById('schedule-modal-title').innerText = isReschedule ? 'Reagendar Post' : 'Agendar Post';
+        document.getElementById('schedule-modal').classList.remove('hidden');
+    }
+    
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').classList.add('hidden');
+        document.getElementById('schedule-date').value = '';
+        document.getElementById('schedule-time').value = '';
+    }
+    
+    async function submitSchedule() {
+        const itemId = document.getElementById('schedule-item-id').value;
+        const isReschedule = document.getElementById('schedule-is-reschedule').value === 'true';
+        const date = document.getElementById('schedule-date').value;
+        const time = document.getElementById('schedule-time').value;
+        
+        if (!date || !time) {
+            alert("Preencha data e horário.");
+            return;
+        }
+        
+        const endpoint = isReschedule ? `/schedule/post/${itemId}/reschedule` : `/schedule/post/${itemId}`;
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scheduled_date: date,
+                    scheduled_time: time,
+                    confirm: true
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao agendar.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+    
+    async function unschedulePost(itemId) {
+        if (!confirm("Tem certeza que deseja remover o agendamento?")) return;
+        
+        try {
+            const response = await fetch(`/schedule/post/${itemId}/unschedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao remover agendamento.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+</script>
+
+
+<script>
+function discardItem(itemId) {
+    if(!confirm("Tem certeza que deseja descartar este post? Ele não será apagado, mas sairá do fluxo operacional.")) return;
+    
+    fetch(`/publications/posts/${itemId}/discard`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            confirm: true,
+            reason: "Descartado manualmente na Agenda Editorial"
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') {
+            window.location.reload();
+        } else {
+            alert(data.detail || data.error || 'Erro ao descartar post');
+        }
+    })
+    .catch(e => {
+        console.error(e);
+        alert("Erro na requisição.");
+    });
+}
+</script>
 {% endblock %}
+

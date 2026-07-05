@@ -21,15 +21,21 @@ async def get_calendar(request: Request):
         "sem_data": [],
         "publicadas": [],
         "futuras": [],
-        "passadas": []
+        "passadas": [],
+        "descartadas": []
     }
     
     for item in items:
-        if item.get("status") == "published":
+        status = item.get("status")
+        if status == "discarded":
+            groups["descartadas"].append(item)
+            continue
+            
+        if status == "published":
             groups["publicadas"].append(item)
             continue
             
-        sched = item.get("scheduled_for")
+        sched = item.get("scheduled_for") or item.get("scheduled_date")
         if not sched:
             groups["sem_data"].append(item)
         elif sched == today_str:
@@ -55,7 +61,7 @@ async def get_calendar(request: Request):
         sort_group(groups[k])
         
     counts = {
-        "agendadas": sum(1 for i in items if i.get("scheduled_for") and i.get("status") != "published"),
+        "agendadas": sum(1 for i in items if (i.get("scheduled_for") or i.get("scheduled_date")) and i.get("status") != "published"),
         "prontas": sum(1 for i in items if i.get("status") == "ready_to_publish"),
         "publicadas": len(groups.get("publicadas", [])),
         "pendentes": sum(1 for i in items if i.get("status") in ("draft", "generated")),

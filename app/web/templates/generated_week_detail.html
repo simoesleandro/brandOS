@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}BrandOS - Detalhes da Semana Gerada{% endblock %}
+
+{% block head %}
+<style>
+    .badge-generated { background-color: rgba(99, 102, 241, 0.2); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
+    .badge-edited { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); }
+    .badge-approved { background-color: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+        .badge-unknown { background-color: rgba(156, 163, 175, 0.2); color: #9ca3af; border-color: rgba(156, 163, 175, 0.3); }
+    .badge-scheduled { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-2xl font-black tracking-tight text-white uppercase font-mono">SEMANA GERADA</h1>
+                <span class="badge 
+                    {% if week.general_status == 'approved' %}badge-approved
+                    {% elif week.general_status == 'partially_approved' %}badge-edited
+                    {% else %}badge-generated{% endif %} px-3 py-1 text-xs">
+                    {{ week.general_status | upper }}
+                </span>
+            </div>
+            <p class="text-sm text-brandMuted">
+                Pasta: <span class="font-mono text-brandSecondary">{{ week.folder_name }}</span> | 
+                Início Planejado: <span class="font-mono">{{ week.planned_week_start }}</span> |
+                Briefing: <span class="font-mono text-brandAccentPurple">{{ week.briefing_source }}</span>
+            </p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <a href="/calendar" class="btn-secondary px-4 py-2">Voltar à Agenda</a>
+            <button id="btn-approve-week" onclick="approveWeek('{{ week.folder_name }}')" class="btn-primary px-5 py-2 font-bold" {% if week.general_status == 'approved' %}disabled{% endif %}>
+                Aprovar Semana Inteira
+            </button>
+        </div>
+    </div>
+
+    <!-- Warnings -->
+    {% if week.warnings %}
+    <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+        <h3 class="text-red-400 font-bold text-sm mb-2 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            Avisos
+        </h3>
+        <ul class="list-disc list-inside text-sm text-red-300/80">
+            {% for warning in week.warnings %}
+            <li>{{ warning }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Posts Principais -->
+    <div class="mb-10">
+        <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2 flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-brandAccentPurple"></div>
+            Posts Principais
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for day in ['segunda', 'quarta', 'sexta'] %}
+            {% set post = week.posts[day] %}
+            <div class="cockpit-card flex flex-col h-full bg-[#020205] border border-brandBorder overflow-hidden group">
+                <div class="p-4 border-b border-brandBorder/50 flex items-center justify-between bg-brandSidebar/30">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold uppercase tracking-wider text-brandSecondary">{{ day }}</span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="badge badge-{{ post.status }} px-2 py-0.5 text-[10px] uppercase">{{ post.status }}</span>
+                            {% if post.content_version == 'manual_final' %}
+                            <span class="badge px-2 py-0.5 text-[10px] uppercase bg-green-500/20 text-green-400 border border-green-500/30">Versão Final</span>
+                            {% endif %}
+                            {% if post.content_source == 'human_refined' %}
+                            <span class="badge px-2 py-0.5 text-[10px] uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Refinado</span>
+                            {% endif %}
+                            {% if post.status == 'scheduled' and post.scheduled_date %}
+                                <span class="text-[10px] text-brandAccentPurple border border-brandAccentPurple/30 px-2 py-0.5 rounded bg-brandAccentPurple/10 font-mono">
+                                    🗓️ {{ post.scheduled_date }} {{ post.scheduled_time }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 flex-1 flex flex-col gap-4">
+                    <p class="text-xs text-brandMuted font-mono bg-brandBg p-2 rounded truncate" title="{{ post.file }}">
+                        {{ post.file }}
+                    </p>
+                    
+                    <div class="flex-1">
+                        <textarea id="content-{{ day }}" class="w-full h-48 bg-brandBg/50 text-brandMuted text-sm font-mono border border-brandBorder/30 rounded p-3 focus:outline-none focus:border-brandAccentPurple transition-colors resize-y">{{ post.content }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="p-4 border-t border-brandBorder/50 flex items-center justify-between bg-brandSidebar/30">
+                    <button onclick="copyPost('{{ day }}')" class="btn-ghost text-xs text-brandMuted hover:text-white flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        Copiar
+                    </button>
+                    
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="flex items-center gap-2">
+                            <button onclick="editPost('{{ post.item_id }}', '{{ day }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                                Salvar Edição
+                            </button>
+                            <button onclick="approvePost('{{ week.folder_name }}', '{{ day }}')" class="btn-primary px-3 py-1.5 text-xs" {% if post.status == 'approved' or post.status == 'scheduled' %}disabled{% endif %}>
+                                Aprovar
+                            </button>
+                        </div>
+                        
+                        <div class="pt-2 border-t border-brandBorder/50 w-full flex flex-col items-end gap-2 mt-1">
+                            {% if post.status == 'approved' %}
+                                <button onclick="openScheduleModal('{{ post.item_id }}')" class="btn-primary bg-brandAccentPurple hover:bg-brandAccentPurple/80 px-3 py-1.5 text-xs">
+                                    Agendar
+                                </button>
+                            {% elif post.status == 'scheduled' %}
+                                <div class="flex items-center gap-2">
+                                    <button onclick="openScheduleModal('{{ post.item_id }}', true)" class="btn-secondary px-3 py-1.5 text-xs">
+                                        Reagendar
+                                    </button>
+                                    <button onclick="unschedulePost('{{ post.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 px-3 py-1.5 text-xs border border-red-500/30">
+                                        Remover agendamento
+                                    </button>
+                                </div>
+                            {% else %}
+                                <span class="text-[10px] text-brandMuted italic">Aprove este post antes de agendar.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Arquivos Auxiliares -->
+    <div>
+        <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2 flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-brandAccentCyan"></div>
+            Arquivos Auxiliares
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for key, aux in week.auxiliary_files.items() %}
+            <div class="cockpit-card p-4 border-brandBorder/50 bg-[#020205]">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold text-brandSecondary uppercase">{{ aux.file }}</span>
+                </div>
+                <div class="h-32 overflow-y-auto">
+                    <pre class="text-[10px] text-brandMuted/70 font-mono whitespace-pre-wrap">{{ aux.content }}</pre>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+<!-- Schedule Modal -->
+<div id="schedule-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+    <div class="bg-[#020205] border border-brandBorder rounded-lg p-6 w-96 max-w-[90vw]">
+        <h3 id="schedule-modal-title" class="text-lg font-bold text-white mb-4">Agendar Post</h3>
+        <input type="hidden" id="schedule-item-id">
+        <input type="hidden" id="schedule-is-reschedule">
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Data (YYYY-MM-DD)</label>
+                <input type="date" id="schedule-date" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Horário (HH:MM)</label>
+                <input type="time" id="schedule-time" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end gap-3 mt-6">
+            <button onclick="closeScheduleModal()" class="btn-ghost text-brandMuted hover:text-white px-4 py-2 text-sm">Cancelar</button>
+            <button onclick="submitSchedule()" class="btn-primary px-4 py-2 text-sm bg-brandAccentPurple hover:bg-brandAccentPurple/80">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openScheduleModal(itemId, isReschedule = false) {
+        document.getElementById('schedule-item-id').value = itemId;
+        document.getElementById('schedule-is-reschedule').value = isReschedule ? 'true' : 'false';
+        document.getElementById('schedule-modal-title').innerText = isReschedule ? 'Reagendar Post' : 'Agendar Post';
+        document.getElementById('schedule-modal').classList.remove('hidden');
+    }
+    
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').classList.add('hidden');
+        document.getElementById('schedule-date').value = '';
+        document.getElementById('schedule-time').value = '';
+    }
+    
+    async function submitSchedule() {
+        const itemId = document.getElementById('schedule-item-id').value;
+        const isReschedule = document.getElementById('schedule-is-reschedule').value === 'true';
+        const date = document.getElementById('schedule-date').value;
+        const time = document.getElementById('schedule-time').value;
+        
+        if (!date || !time) {
+            alert("Preencha data e horário.");
+            return;
+        }
+        
+        const endpoint = isReschedule ? `/schedule/post/${itemId}/reschedule` : `/schedule/post/${itemId}`;
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scheduled_date: date,
+                    scheduled_time: time,
+                    confirm: true
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao agendar.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+    
+    async function unschedulePost(itemId) {
+        if (!confirm("Tem certeza que deseja remover o agendamento?")) return;
+        
+        try {
+            const response = await fetch(`/schedule/post/${itemId}/unschedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao remover agendamento.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    async function editPost(itemId, plannedDay) {
+        const content = document.getElementById(`content-${plannedDay}`).value;
+        try {
+            const response = await fetch(`/publications/posts/${itemId}/edit-content`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    content: content,
+                    confirm: true,
+                    source_note: "Edição feita na tela de revisão da semana gerada."
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao editar post.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+    
+    async function approvePost(folderName, plannedDay) {
+        try {
+            const response = await fetch(`/generated-weeks/${folderName}/posts/${plannedDay}/approve`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao aprovar post.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+    
+    async function approveWeek(folderName) {
+        try {
+            const btn = document.getElementById('btn-approve-week');
+            btn.disabled = true;
+            btn.innerText = "Aprovando...";
+            
+            const response = await fetch(`/generated-weeks/${folderName}/approve-week`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao aprovar semana.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+            const btn = document.getElementById('btn-approve-week');
+            btn.disabled = false;
+            btn.innerText = "Aprovar Semana Inteira";
+        }
+    }
+    
+    function copyPost(day) {
+        const content = document.getElementById(`content-${day}`).value;
+        navigator.clipboard.writeText(content).then(() => {
+            alert("Conteúdo copiado!");
+        }).catch(err => {
+            console.error('Erro ao copiar: ', err);
+        });
+    }
+
+function discardItem(itemId) {
+    if(!confirm("Tem certeza que deseja descartar este post? Ele não será apagado, mas sairá do fluxo operacional.")) return;
+    fetch(`/publications/posts/${itemId}/discard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true, reason: "Descartado manualmente na Revisão da Semana" })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'success') { window.location.reload(); }
+        else { alert(data.detail || data.error || 'Erro ao descartar'); }
+    }).catch(e => { console.error(e); alert("Erro na requisição."); });
+}
+</script>
+
+{% endblock %}

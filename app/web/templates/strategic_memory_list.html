@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Memória Estratégica</h1>
+            <p class="text-brandSecondary">Acúmulo de inteligência baseada nos resultados reais das publicações.</p>
+        </div>
+        <div>
+            <button onclick="generateStrategicMemory()" class="btn-primary flex items-center gap-2">
+                <i class="ph ph-sparkle"></i> Gerar Memória Estratégica
+            </button>
+        </div>
+    </div>
+    
+    {% if error %}
+    <div class="bg-red-900/50 border border-red-500/50 p-4 rounded text-red-200">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for mem in memories %}
+        <div class="card p-6 bg-[#020205] border border-brandPrimary/20 relative overflow-hidden group">
+            <div class="absolute -right-4 -bottom-4 text-brandPrimary/5 group-hover:scale-110 transition-transform">
+                <i class="ph ph-brain text-8xl"></i>
+            </div>
+            <div class="relative z-10 flex flex-col h-full">
+                <div class="flex items-start justify-between mb-4">
+                    <span class="badge bg-brandPrimary/30 text-brandPrimary font-mono">
+                        {{ mem.id | replace("strategic-memory-", "") }}
+                    </span>
+                    <span class="text-xs text-brandMuted bg-brandBg px-2 py-1 rounded">
+                        {{ mem.window_days }} dias
+                    </span>
+                </div>
+                
+                <h3 class="text-xl font-bold text-white mb-1">Memória Estratégica</h3>
+                <p class="text-xs text-brandMuted mb-4">Gerada em: {{ mem.generated_at[:10] }}</p>
+                
+                <div class="flex gap-4 mt-auto mb-6">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-brandMuted uppercase">Posts Fonte</span>
+                        <span class="text-lg font-bold text-white">{{ mem.source_posts_count }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-brandMuted uppercase">Aprendizados</span>
+                        <span class="text-lg font-bold text-brandAccentCyan">{{ mem.source_learning_count }}</span>
+                    </div>
+                </div>
+                
+                <a href="/strategic-memory/{{ mem.id }}" class="btn-secondary w-full text-center flex items-center justify-center gap-2">
+                    <i class="ph ph-brain"></i> Ver Memória
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full card p-12 bg-[#020205] border border-brandBorder border-dashed text-center">
+            <div class="w-16 h-16 rounded-full bg-brandPrimary/10 flex items-center justify-center text-brandPrimary text-2xl mx-auto mb-4">
+                <i class="ph ph-brain"></i>
+            </div>
+            <h3 class="text-xl font-medium text-white mb-2">Nenhuma memória estratégica gerada</h3>
+            <p class="text-brandMuted max-w-md mx-auto mb-6">
+                A memória estratégica consolida os aprendizados editoriais de posts publicados nos últimos 30 dias para orientar o planejamento futuro.
+            </p>
+            <button onclick="generateStrategicMemory()" class="btn-primary mx-auto flex items-center gap-2">
+                <i class="ph ph-sparkle"></i> Gerar a primeira memória
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+async function generateStrategicMemory() {
+    if (!confirm("Deseja gerar uma nova memória estratégica baseada nos posts dos últimos 30 dias?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Gerando memória estratégica... (isso pode demorar um pouco)</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/strategic-memory/generate`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                confirm: true,
+                window_days: 30
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        const result = await response.json();
+        window.location.href = `/strategic-memory/${result.memory_id}`;
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+</script>
+{% endblock %}

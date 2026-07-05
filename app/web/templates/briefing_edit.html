@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="/briefings/{{ filename }}" class="text-brandMuted hover:text-white flex items-center gap-2 mb-4 transition-colors">
+        <i class="ph ph-arrow-left"></i> Voltar para Briefing
+    </a>
+    <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+        <i class="ph ph-pencil-simple text-brandPrimary"></i>
+        Editar Briefing
+    </h1>
+    <p class="text-sm text-brandMuted">Altere o conteúdo do briefing. Não remova os metadados do topo (Status, Fonte, Recommendation ID).</p>
+</div>
+
+<div class="card p-6 bg-[#020205] border border-white/5 shadow-2xl">
+    <textarea id="briefingContent" class="w-full bg-[#1a1b23] text-white font-mono text-sm p-4 rounded-lg border border-white/10 h-[600px] mb-4 focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary" spellcheck="false">{{ content }}</textarea>
+    
+    <div class="flex justify-end gap-3 mt-6">
+        <button onclick="saveBriefing()" class="btn-primary flex items-center gap-2">
+            <i class="ph ph-floppy-disk"></i> Salvar Alterações
+        </button>
+    </div>
+</div>
+
+<script>
+async function saveBriefing() {
+    const content = document.getElementById('briefingContent').value;
+    
+    if (!confirm("Confirmar alterações no briefing?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Salvando...</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/briefings/{{ filename }}/edit`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                content: content,
+                confirm: true
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro ao salvar: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        window.location.href = `/briefings/{{ filename }}`;
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+</script>
+{% endblock %}

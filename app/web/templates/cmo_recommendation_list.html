@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-white mb-2">CMO Agent</h1>
+        <p class="text-brandMuted">Recomendações estratégicas geradas para orientar os próximos ciclos.</p>
+    </div>
+    <button onclick="generateCmoRecommendation()" class="btn-primary flex items-center gap-2">
+        <i class="ph ph-sparkle"></i> Gerar Recomendação
+    </button>
+</div>
+
+{% if not recommendations %}
+<div class="card p-12 text-center">
+    <i class="ph ph-robot text-6xl text-brandMuted mb-4"></i>
+    <h3 class="text-xl font-bold text-white mb-2">Nenhuma recomendação gerada ainda</h3>
+    <p class="text-brandMuted mb-6">O CMO Agent ainda não gerou nenhuma recomendação estratégica. Clique no botão acima para começar.</p>
+    <button onclick="generateCmoRecommendation()" class="btn-primary inline-flex items-center gap-2">
+        <i class="ph ph-sparkle"></i> Gerar Primeira Recomendação
+    </button>
+</div>
+{% else %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for rec in recommendations %}
+    <div class="card p-6 flex flex-col justify-between">
+        <div>
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-xs font-mono px-2 py-1 bg-[#1a1b23] text-brandMuted rounded border border-white/5">
+                    {{ rec.generated_at[:10] }}
+                </span>
+                {% if rec.used_strategic_memory %}
+                <span class="text-xs font-bold px-2 py-1 bg-brandPrimary/10 text-brandPrimary rounded border border-brandPrimary/20 flex items-center gap-1">
+                    <i class="ph ph-brain"></i> Usou Memória
+                </span>
+                {% else %}
+                <span class="text-xs font-bold px-2 py-1 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 flex items-center gap-1">
+                    <i class="ph ph-warning"></i> Sem Memória
+                </span>
+                {% endif %}
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Recomendação Estratégica</h3>
+            <div class="text-sm text-brandMuted space-y-1 mb-6">
+                <p><i class="ph ph-clock-counter-clockwise mr-1"></i> Janela analisada: {{ rec.window_days }} dias</p>
+                <p><i class="ph ph-article mr-1"></i> Posts base: {{ rec.source_posts_count }}</p>
+            </div>
+        </div>
+        <div class="flex flex-col gap-2">
+            <a href="/cmo/recommendations/{{ rec.id }}" class="btn-secondary w-full text-center">Ver Recomendação</a>
+            <button onclick="createBriefingFromCmo('{{ rec.id }}')" class="btn-primary w-full text-center flex items-center justify-center gap-2">
+                <i class="ph ph-magic-wand"></i> Criar briefing base
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+async function generateCmoRecommendation() {
+    if (!confirm("Deseja gerar uma nova recomendação estratégica com base nos dados mais recentes?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> O CMO Agent está pensando... (isso pode demorar)</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/cmo/recommendation/generate`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                confirm: true,
+                window_days: 30
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        const result = await response.json();
+        window.location.href = `/cmo/recommendations/${result.recommendation_id}`;
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+</script>
+{% endblock %}

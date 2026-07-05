@@ -72,6 +72,10 @@
                 <svg class="w-5 h-5 text-brandMuted transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                 Visão Geral
             </a>
+            <a href="/ops" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted hover:text-white transition-colors">
+                <svg class="w-5 h-5 text-brandMuted transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Ops Dashboard
+            </a>
             <a href="/generate" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted hover:text-white transition-colors">
                 <svg class="w-5 h-5 text-brandAccentPurple transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 <span class="text-white">Nova Semana</span>
@@ -97,6 +101,14 @@
             <a href="/history" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted hover:text-white transition-colors">
                 <svg class="w-5 h-5 text-brandMuted transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Histórico
+            </a>
+            <a href="/strategic-memory" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted hover:text-white transition-colors">
+                <svg class="w-5 h-5 text-brandMuted transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                Memória Estratégica
+            </a>
+            <a href="/cmo/recommendations" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted hover:text-white transition-colors">
+                <i class="ph ph-robot text-xl"></i>
+                CMO Agent
             </a>
             <a href="#" class="sidebar-link flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-brandMuted opacity-50 cursor-not-allowed">
                 <svg class="w-5 h-5 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -145,5 +157,136 @@
             });
         });
     </script>
+
+<script>
+async function generateLearning(itemId) {
+  if (!confirm("Gerar aprendizado editorial para esta publicação?")) return;
+
+  // Mostra um alert de carregamento simples ou desabilita tela
+  const toast = document.createElement('div');
+  toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Gerando aprendizado...</div>';
+  document.body.appendChild(toast);
+
+  try {
+      const response = await fetch(`/publications/posts/${itemId}/generate-learning`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({confirm: true})
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        alert("Erro ao gerar aprendizado: " + (data.detail || response.statusText));
+        toast.remove();
+        return;
+      }
+
+      window.location.href = `/publications/posts/${itemId}/learning`;
+  } catch (error) {
+      alert("Erro de conexão: " + error.message);
+      toast.remove();
+  }
+}
+
+async function generateStrategicMemory() {
+    if (!confirm("Deseja gerar uma nova memória estratégica baseada nos posts dos últimos 30 dias?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Gerando memória estratégica... (isso pode demorar um pouco)</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/strategic-memory/generate`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                confirm: true,
+                window_days: 30
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        const result = await response.json();
+        window.location.href = `/strategic-memory/${result.memory_id}`;
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+
+async function generateCmoRecommendation() {
+    if (!confirm("Deseja gerar uma nova recomendação estratégica com base nos dados mais recentes?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandAccentPurple text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> O CMO Agent está pensando... (isso pode demorar)</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/cmo/recommendation/generate`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                confirm: true,
+                window_days: 30
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        const result = await response.json();
+        window.location.href = `/cmo/recommendations/${result.recommendation_id}`;
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+
+async function createBriefingFromCmo(recommendationId) {
+    if (!confirm("Isso criará um briefing em rascunho para revisão humana. Nenhuma semana será gerada automaticamente. Continuar?")) return;
+    
+    const toast = document.createElement('div');
+    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandAccentPurple text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Convertendo recomendação em briefing...</div>';
+    document.body.appendChild(toast);
+    
+    try {
+        const response = await fetch(`/cmo/recommendations/${recommendationId}/create-briefing`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                confirm: true
+            })
+        });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            alert("Erro: " + (data.detail || response.statusText));
+            toast.remove();
+            return;
+        }
+        
+        const result = await response.json();
+        if (result.briefing_filename) {
+            window.location.href = `/briefings/${result.briefing_filename}`;
+        } else {
+            window.location.href = `/briefings`;
+        }
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        toast.remove();
+    }
+}
+</script>
+
 </body>
 </html>

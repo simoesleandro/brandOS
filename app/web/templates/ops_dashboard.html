@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% macro translate_status(status) %}
+{% if status == 'generated' %}Gerado
+{% elif status == 'edited' %}Editado
+{% elif status == 'approved' %}Aprovado
+{% elif status == 'scheduled' %}Agendado
+{% elif status == 'publishing_ready' %}Pronto para publicar
+{% elif status == 'published' %}Publicado
+{% elif status == 'discarded' %}Descartado
+{% elif status == 'waiting_24h_metrics' %}Aguardando métricas 24h
+{% elif status == 'waiting_48h_metrics' %}Aguardando métricas 48h
+{% elif status == 'waiting_7d_metrics' %}Aguardando métricas 7 dias
+{% elif status == 'metrics_imported' %}Métricas importadas
+{% elif status == 'analysis_generated' %}Análise gerada
+{% elif status == 'completed' %}Concluído
+{% else %}{{ status }}{% endif %}
+{% endmacro %}
+
+<div class="space-y-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Ops Dashboard</h1>
+            <p class="text-brandSecondary">Painel Tático de Operação Editorial.</p>
+        </div>
+    </div>
+    
+    {% if error %}
+    <div class="bg-red-900/50 border border-red-500/50 p-4 rounded text-red-200">
+        {{ error }}
+    </div>
+    {% else %}
+    
+    {% if lists.warnings %}
+    <div class="bg-yellow-900/20 border border-yellow-700/50 p-4 rounded text-yellow-200 text-xs mb-6">
+        <h4 class="font-bold mb-2">Avisos do Sistema</h4>
+        <ul class="list-disc pl-4 space-y-1">
+            {% for w in lists.warnings %}
+            <li>{{ w.message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- SECTION A: KPIs -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Total</p>
+            <p class="text-2xl font-bold text-white">{{ counts.total_main_posts }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Gerados</p>
+            <p class="text-2xl font-bold text-white">{{ counts.generated_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Editados</p>
+            <p class="text-2xl font-bold text-white">{{ counts.edited_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Aprovados</p>
+            <p class="text-2xl font-bold text-brandAccentCyan">{{ counts.approved_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Agendados</p>
+            <p class="text-2xl font-bold text-brandAccentPurple">{{ counts.scheduled_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205]">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Publicados</p>
+            <p class="text-2xl font-bold text-green-400">{{ counts.published_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205] border-brandAccentCyan/30">
+            <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Prontos p/ Agendar</p>
+            <p class="text-2xl font-bold text-brandAccentCyan">{{ counts.ready_to_schedule_count }}</p>
+        </div>
+        <div class="cockpit-card p-4 bg-[#020205] border-red-500/30 relative overflow-hidden group">
+            <p class="text-[10px] text-red-400 uppercase tracking-widest font-mono mb-1">Atrasados</p>
+            <p class="text-2xl font-bold text-red-400 font-heading">{{ counts.overdue_count }}</p>
+        </div>
+
+        <!-- KPI Aprendizados (Fase 5.4) -->
+        <div class="cockpit-card p-4 bg-[#020205] border-brandPrimary/30 relative overflow-hidden group">
+            <div class="absolute -right-2 -bottom-2 text-brandPrimary/10 group-hover:scale-110 transition-transform">
+                <i class="ph ph-brain text-5xl"></i>
+            </div>
+            <div class="relative z-10">
+                <p class="text-[10px] text-brandPrimary uppercase tracking-widest font-mono mb-1">Aprendizados</p>
+                <p class="text-2xl font-bold text-white font-heading">{{ counts.learnings_generated_count }}</p>
+            </div>
+        </div>
+</div>
+
+    <!-- SECTION B: Pipeline Visual -->
+    <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2">Pipeline Editorial</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-4">
+        {% for col_status, col_name, color_class in [
+            ('draft', 'Rascunhos', 'text-gray-500'),
+            ('generated', 'Gerados', 'text-gray-400'),
+            ('edited', 'Editados', 'text-blue-400'),
+            ('approved', 'Aprovados', 'text-brandAccentCyan'),
+            ('scheduled', 'Agendados', 'text-brandAccentPurple'),
+            ('publishing_ready', 'Prontos p/ Publicar', 'text-brandAccentPurple'),
+            ('published', 'Publicados', 'text-green-400'),
+            ('discarded', 'Descartados', 'text-red-500')
+        ] %}
+        {% if pipeline_groups.get(col_status) or col_status != 'discarded' %}
+        <div class="bg-brandSidebar/30 border border-brandBorder rounded-lg flex flex-col h-[500px]">
+            <div class="p-3 border-b border-brandBorder/50 flex justify-between items-center bg-[#020205]/80 rounded-t-lg">
+                <span class="text-xs font-bold uppercase tracking-wider {{ color_class }}">{{ col_name }}</span>
+                <span class="text-xs text-brandMuted bg-brandBg px-2 py-0.5 rounded">{{ pipeline_groups[col_status]|length }}</span>
+            </div>
+            <div class="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+                {% for item in pipeline_groups[col_status] %}
+                <div class="bg-[#020205] border border-brandBorder p-3 rounded hover:border-brandAccentPurple/50 transition-colors group">
+                    <p class="text-sm font-medium text-white mb-2 line-clamp-2">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
+                    <div class="flex justify-between items-end">
+                        <div class="flex flex-col gap-1">
+                            {% if item.planned_day %}
+                            <span class="text-[10px] text-brandMuted font-mono">Dia: {{ item.planned_day }}</span>
+                            {% endif %}
+                            {% if item.scheduled_date %}
+                            <span class="text-[10px] text-brandAccentPurple font-mono">🗓️ {{ item.scheduled_date }} {{ item.scheduled_time or '' }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {% if item.generated_folder %}
+                            <a href="/generated-weeks/{{ item.generated_folder }}" class="text-[10px] text-brandSecondary hover:text-white underline">Revisar</a>
+                            {% endif %}
+                            
+                            {% if item.status in ['draft', 'generated', 'edited', 'approved', 'scheduled', 'publishing_ready'] %}
+                            <button onclick="markManualPublished('{{ item.identifier }}')" class="text-[10px] text-green-400 hover:text-green-300 underline">Reg. Publicado</button>
+                            {% endif %}
+                            
+                            {% if item.status == 'draft' %}
+                            <a href="/publish/post/{{ item.identifier }}" class="text-[10px] text-brandSecondary hover:text-white underline">Editar / Preparar</a>
+                            <button onclick="discardItem('{{ item.identifier }}')" class="text-[10px] text-red-400 hover:text-red-300 underline">Descartar</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="h-full flex items-center justify-center">
+                    <span class="text-xs text-brandMuted italic">Vazio</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        
+        <!-- SECTION C: Próximos 7 dias -->
+        <div>
+            <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2">Próximos 7 Dias</h2>
+            <div class="space-y-3">
+                {% for item in lists.next_7_days %}
+                <div class="cockpit-card p-4 bg-[#020205] flex items-center justify-between group">
+                    <div>
+                        <p class="text-sm font-medium text-white mb-1">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
+                        <p class="text-[10px] text-brandAccentPurple font-mono">🗓️ {{ item.scheduled_date }} {{ item.scheduled_time or '' }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% if item.identifier %}
+                        {% if item.generated_folder %}
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn-secondary px-3 py-1.5 text-[10px]">Revisar</a>
+                        {% endif %}
+                        {% if item.item_id %}
+                        <button onclick="openScheduleModal('{{ item.item_id }}', true)" class="btn-secondary px-3 py-1.5 text-[10px]">Reagendar</button>
+                        <button onclick="unschedulePost('{{ item.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 text-[10px]">Remover</button>
+                        {% endif %}
+{% else %}
+                        <span class="text-[10px] text-red-400">Este item não possui ID e precisa ser normalizado.</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-brandMuted italic">Nenhum post agendado para os próximos 7 dias.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SECTION D: Prontos para agendar -->
+        <div>
+            <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2 flex items-center gap-2">
+                Prontos para Agendar <span class="bg-brandAccentCyan/20 text-brandAccentCyan px-2 py-0.5 rounded text-[10px]">{{ counts.ready_to_schedule_count }}</span>
+            </h2>
+            <div class="space-y-3">
+                {% for item in lists.ready_to_schedule %}
+                <div class="cockpit-card p-4 bg-[#020205] border-brandAccentCyan/30 flex items-center justify-between group">
+                    <div>
+                        <p class="text-sm font-medium text-white mb-1">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
+                        {% if item.planned_day %}
+                        <p class="text-[10px] text-brandMuted font-mono">Planejado: {{ item.planned_day }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% if item.identifier %}
+                        {% if item.generated_folder %}
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn-secondary px-3 py-1.5 text-[10px]">Revisar</a>
+                        {% endif %}
+                        {% if item.item_id %}
+                        <button onclick="openScheduleModal('{{ item.item_id }}')" class="btn-primary bg-brandAccentPurple hover:bg-brandAccentPurple/80 px-3 py-1.5 text-[10px]">Agendar</button>
+                        {% endif %}
+{% else %}
+                        <span class="text-[10px] text-red-400">Este item não possui ID e precisa ser normalizado.</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-brandMuted italic">Nenhum post aguardando agendamento.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SECTION E: Pendências de revisão -->
+        <div>
+            <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2 flex items-center gap-2">
+                Pendências de Revisão <span class="bg-brandBorder text-brandMuted px-2 py-0.5 rounded text-[10px]">{{ counts.pending_count }}</span>
+            </h2>
+            <div class="space-y-3">
+                {% for item in lists.pending_reviews %}
+                <div class="cockpit-card p-4 bg-[#020205] flex items-center justify-between group">
+                    <div>
+                        <p class="text-sm font-medium text-white mb-1">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
+                        <p class="text-[10px] text-brandMuted uppercase">{{ translate_status(item.status) }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% if item.identifier %}
+                        {% if item.generated_folder %}
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn-secondary px-3 py-1.5 text-[10px]">Revisar semana</a>
+                        {% endif %}
+{% else %}
+                        <span class="text-[10px] text-red-400">Este item não possui ID e precisa ser normalizado.</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-brandMuted italic">Nenhuma pendência de revisão.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SECTION F: Atrasados -->
+        <div>
+            <h2 class="text-sm font-bold text-red-400 uppercase tracking-widest font-mono mb-4 border-b border-red-900/50 pb-2 flex items-center gap-2">
+                Atrasados <span class="bg-red-500/20 text-red-400 px-2 py-0.5 rounded text-[10px]">{{ counts.overdue_count }}</span>
+            </h2>
+            <div class="space-y-3">
+                {% for item in lists.overdue %}
+                <div class="cockpit-card p-4 bg-[#020205] border-red-500/30 flex items-center justify-between group">
+                    <div>
+                        <p class="text-sm font-medium text-white mb-1">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
+                        <p class="text-[10px] text-red-400 font-mono">🗓️ {{ item.scheduled_date }} {{ item.scheduled_time or '' }}</p>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {% if item.identifier %}
+                        {% if item.generated_folder %}
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn-secondary px-3 py-1.5 text-[10px]">Revisar</a>
+                        {% endif %}
+                        {% if item.item_id %}
+                        <button onclick="openScheduleModal('{{ item.item_id }}', true)" class="btn-secondary px-3 py-1.5 text-[10px]">Reagendar</button>
+                        <button onclick="unschedulePost('{{ item.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 border border-red-500/30 px-3 py-1.5 text-[10px]">Remover</button>
+                        {% endif %}
+{% else %}
+                        <span class="text-[10px] text-red-400">Este item não possui ID e precisa ser normalizado.</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm text-brandMuted italic">Nenhum post atrasado.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+
+    <!-- SECTION E: Memória Estratégica -->
+    <h2 class="text-sm font-bold text-brandPrimary uppercase tracking-widest font-mono mb-4 border-b border-brandPrimary/30 pb-2 mt-8 flex items-center gap-2">
+        <i class="ph ph-brain text-xl"></i>
+        Memória Estratégica
+    </h2>
+    <div class="card p-6 bg-[#020205] border border-brandPrimary/20 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold text-white mb-1">Gerar aprendizado do ciclo anterior</h3>
+            <p class="text-sm text-brandMuted">Analisa os posts publicados e os aprendizados extraídos para gerar contexto ao CMO Agent.</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="/strategic-memory" class="btn-secondary whitespace-nowrap">Ver Histórico</a>
+            <button onclick="generateStrategicMemory()" class="btn-primary flex items-center gap-2 whitespace-nowrap">
+                <i class="ph ph-sparkle"></i> Nova Memória Estratégica
+            </button>
+        </div>
+    </div>
+    <!-- SECTION F: CMO Agent -->
+    <h2 class="text-sm font-bold text-brandAccentPurple uppercase tracking-widest font-mono mb-4 border-b border-brandAccentPurple/30 pb-2 mt-8 flex items-center gap-2">
+        <i class="ph ph-robot text-xl"></i>
+        CMO Agent
+    </h2>
+    <div class="card p-6 bg-[#020205] border border-brandAccentPurple/20 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold text-white mb-1">Recomendação Estratégica</h3>
+            <p class="text-sm text-brandMuted">Sugestões de formatos, temas e agenda para os próximos ciclos.</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="/cmo/recommendations" class="btn-secondary whitespace-nowrap">Ver Histórico</a>
+            <button onclick="generateCmoRecommendation()" class="btn-primary flex items-center gap-2 whitespace-nowrap">
+                <i class="ph ph-sparkle"></i> Nova Recomendação
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Modal Reutilizado da Fase 4 -->
+<div id="schedule-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+    <div class="bg-[#020205] border border-brandBorder rounded-lg p-6 w-96 max-w-[90vw]">
+        <h3 id="schedule-modal-title" class="text-lg font-bold text-white mb-4">Agendar Post</h3>
+        <input type="hidden" id="schedule-item-id">
+        <input type="hidden" id="schedule-is-reschedule">
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Data (YYYY-MM-DD)</label>
+                <input type="date" id="schedule-date" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+            <div>
+                <label class="block text-xs font-mono text-brandMuted mb-1">Horário (HH:MM)</label>
+                <input type="time" id="schedule-time" class="w-full bg-brandBg/50 text-white text-sm font-mono border border-brandBorder/50 rounded p-2 focus:outline-none focus:border-brandAccentPurple">
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end gap-3 mt-6">
+            <button onclick="closeScheduleModal()" class="btn-ghost text-brandMuted hover:text-white px-4 py-2 text-sm">Cancelar</button>
+            <button onclick="submitSchedule()" class="btn-primary px-4 py-2 text-sm bg-brandAccentPurple hover:bg-brandAccentPurple/80">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openScheduleModal(itemId, isReschedule = false) {
+        document.getElementById('schedule-item-id').value = itemId;
+        document.getElementById('schedule-is-reschedule').value = isReschedule ? 'true' : 'false';
+        document.getElementById('schedule-modal-title').innerText = isReschedule ? 'Reagendar Post' : 'Agendar Post';
+        document.getElementById('schedule-modal').classList.remove('hidden');
+    }
+    
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').classList.add('hidden');
+        document.getElementById('schedule-date').value = '';
+        document.getElementById('schedule-time').value = '';
+    }
+    
+    async function submitSchedule() {
+        const itemId = document.getElementById('schedule-item-id').value;
+        const isReschedule = document.getElementById('schedule-is-reschedule').value === 'true';
+        const date = document.getElementById('schedule-date').value;
+        const time = document.getElementById('schedule-time').value;
+        
+        if (!date || !time) {
+            alert("Preencha data e horário.");
+            return;
+        }
+        
+        const endpoint = isReschedule ? `/schedule/post/${itemId}/reschedule` : `/schedule/post/${itemId}`;
+        
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scheduled_date: date,
+                    scheduled_time: time,
+                    confirm: true
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao agendar.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+    
+    async function unschedulePost(itemId) {
+        if (!confirm("Tem certeza que deseja remover o agendamento?")) return;
+        
+        try {
+            const response = await fetch(`/schedule/post/${itemId}/unschedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirm: true })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Erro ao remover agendamento.");
+            alert(data.message);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+function discardItem(itemId) {
+        if(confirm('Tem certeza que deseja descartar este rascunho? Ele será movido para DESCARTADOS.')) {
+            fetch(`/publications/posts/${itemId}/discard`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(res => res.json())
+            .then(data => window.location.reload())
+            .catch(err => alert('Erro ao descartar item'));
+        }
+    }
+
+    function markManualPublished(itemId) {
+        if(confirm('Deseja registrar este item como PUBLICADO manualmente? Ele será movido para a coluna PUBLICADOS.')) {
+            fetch(`/publications/posts/${itemId}/mark-manual-published`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({confirm: true})
+            })
+            .then(res => {
+                if(!res.ok) throw new Error('Erro ao registrar como publicado');
+                return res.json();
+            })
+            .then(data => window.location.reload())
+            .catch(err => alert('Erro ao registrar como publicado: ' + err.message));
+        }
+    }
+</script>
+
+{% endblock %}

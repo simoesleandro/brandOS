@@ -64,7 +64,7 @@
                         </div>
                         <div class="flex flex-col">
                             <span class="text-[10px] font-mono text-brandMuted uppercase tracking-widest">Ativos</span>
-                            <span class="text-sm font-bold text-white">{{ w["items"] | length }} <span class="text-xs font-normal text-brandMuted">peças</span></span>
+                            <span class="text-sm font-bold text-white">{{ w.get("items", [w]) | length }} <span class="text-xs font-normal text-brandMuted">peças</span></span>
                         </div>
                     </div>
                     
@@ -87,4 +87,37 @@
         {% endfor %}
     {% endif %}
 </div>
+
+{% if technical_weeks %}
+<div class="mt-12">
+    <details class="group bg-[#020205] border border-brandBorder/50 rounded-lg overflow-hidden">
+        <summary class="flex items-center justify-between p-4 cursor-pointer text-brandMuted hover:text-white transition-colors">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="font-mono text-xs uppercase tracking-widest">Itens Técnicos / Arquivados ({{ technical_weeks|length }})</span>
+            </div>
+        </summary>
+        <div class="p-4 border-t border-brandBorder/50 bg-[#010103]">
+            <div class="grid grid-cols-1 gap-4">
+                {% for w in technical_weeks %}
+                {% set display_theme = w.theme or w.title or 'Tema não informado' %}
+                {% set display_id = w.id or (w.date ~ '-semana-brandos') %}
+                <div class="cockpit-card p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="text-[10px] font-mono text-brandMuted bg-brandBg px-2 py-0.5 rounded border border-brandBorder uppercase tracking-widest">{{ w.project }}</span>
+                            <span class="text-[10px] font-mono text-brandMuted">ID: {{ display_id }}</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-gray-400">{{ display_theme }}</h3>
+                    </div>
+                    <div class="mt-3 md:mt-0">
+                        <a href="/publications/{{ display_id }}" class="text-[10px] text-brandSecondary hover:text-white underline">Inspecionar</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+</div>
+{% endif %}
 {% endblock %}

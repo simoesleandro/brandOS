@@ -33,12 +33,19 @@ async def view_briefing(request: Request, filename: str):
         import markdown
         raw_content = service.read_briefing(filename)
         html_content = markdown.markdown(raw_content, extensions=["extra", "nl2br"])
+        
+        status = "unknown"
+        status_match = __import__('re').search(r'^Status:\s*(.*)$', raw_content, __import__('re').MULTILINE | __import__('re').IGNORECASE)
+        if status_match:
+            status = status_match.group(1).strip().lower()
+            
         return templates.TemplateResponse(
             "briefing_detail.html",
             {
                 "request": request, 
                 "filename": filename,
-                "content": html_content
+                "content": html_content,
+                "status": status
             }
         )
     except FileNotFoundError:
@@ -80,3 +87,49 @@ async def generate_week(filename: str, request: Request):
     except Exception as e:
         print(f"Erro na geração da semana: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+from pydantic import BaseModel
+class ApproveBriefingRequest(BaseModel):
+    confirm: bool = False
+
+class EditBriefingRequest(BaseModel):
+    content: str
+    confirm: bool = False
+
+@router.get("/{filename}/edit", response_class=HTMLResponse)
+async def edit_briefing_view(request: Request, filename: str):
+    try:
+        raw_content = service.read_briefing(filename)
+        return templates.TemplateResponse(
+            "briefing_edit.html",
+            {
+                "request": request, 
+                "filename": filename,
+                "content": raw_content
+            }
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Briefing não encontrado.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{filename}/edit")
+async def edit_briefing_action(filename: str, payload: EditBriefingRequest, request: Request):
+    if not payload.confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária.")
+    
+    result = service.edit_briefing(filename, payload.content, confirm=payload.confirm)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+@router.post("/{filename}/approve")
+async def approve_briefing_action(filename: str, payload: ApproveBriefingRequest, request: Request):
+    if not payload.confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária.")
+        
+    result = service.approve_briefing(filename, confirm=payload.confirm)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
