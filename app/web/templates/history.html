@@ -3,17 +3,20 @@
 {% block title %}Histórico | BrandOS Console{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight">Histórico de Publicações</h1>
-    <p class="text-vercelMuted mt-2">Log extraído de data/registry/publication-log.json</p>
+<div class="workbench-hero mb-8">
+    <div>
+        <div class="workbench-eyebrow">Registro operacional</div>
+        <h1>Histórico de Publicações</h1>
+        <p>Log consolidado das peças registradas, status editoriais e itens técnicos arquivados.</p>
+    </div>
 </div>
 
-<div class="card overflow-x-auto">
+<div class="operation-card overflow-x-auto">
     {% if not history %}
-    <p class="text-vercelMuted text-center py-4">O histórico está vazio.</p>
+    <p class="text-brandMuted text-center py-4">O histórico está vazio.</p>
     {% else %}
     <table class="w-full text-left text-sm">
-        <thead class="border-b border-vercelBorder text-vercelMuted">
+        <thead class="border-b border-brandBorder text-brandMuted">
             <tr>
                 <th class="pb-3 px-4 font-medium">Data</th>
                 <th class="pb-3 px-4 font-medium">Projeto</th>
@@ -22,12 +25,12 @@
                 <th class="pb-3 px-4 font-medium">Status</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-vercelBorder">
+        <tbody class="divide-y divide-brandBorder">
             {% for h in history | reverse %}
-            <tr class="hover:bg-vercelBorder/20 transition-colors">
-                <td class="py-3 px-4 text-vercelMuted">{{ h.date }}</td>
+            <tr class="hover:bg-brandBorder/20 transition-colors">
+                <td class="py-3 px-4 text-brandMuted">{{ h.date }}</td>
                 <td class="py-3 px-4 font-medium text-white">{{ h.project }}</td>
-                <td class="py-3 px-4 text-vercelMuted">{{ h.format }}</td>
+                <td class="py-3 px-4 text-brandMuted">{{ h.format }}</td>
                 <td class="py-3 px-4">{{ h.title }}</td>
                 <td class="py-3 px-4">
                     <span class="badge badge-{{ h.status }}">{{ h.status | translate_status }}</span>
@@ -41,16 +44,16 @@
 
 {% if technical_history %}
 <div class="mt-12">
-    <details class="group bg-[#020205] border border-vercelBorder rounded-lg overflow-hidden">
-        <summary class="flex items-center justify-between p-4 cursor-pointer text-vercelMuted hover:text-white transition-colors">
+    <details class="group bg-[#020205] border border-brandBorder rounded-lg overflow-hidden">
+        <summary class="flex items-center justify-between p-4 cursor-pointer text-brandMuted hover:text-white transition-colors">
             <div class="flex items-center gap-3">
                 <svg class="w-5 h-5 group-open:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 <span class="font-mono text-xs uppercase tracking-widest">Itens Técnicos / Arquivados ({{ technical_history|length }})</span>
             </div>
         </summary>
-        <div class="p-4 border-t border-vercelBorder bg-[#010103] overflow-x-auto">
+        <div class="p-4 border-t border-brandBorder bg-[#010103] overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="border-b border-vercelBorder text-vercelMuted">
+                <thead class="border-b border-brandBorder text-brandMuted">
                     <tr>
                         <th class="pb-3 px-4 font-medium">Data</th>
                         <th class="pb-3 px-4 font-medium">Projeto</th>
@@ -59,12 +62,12 @@
                         <th class="pb-3 px-4 font-medium">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-vercelBorder">
+                <tbody class="divide-y divide-brandBorder">
                     {% for h in technical_history | reverse %}
-                    <tr class="hover:bg-vercelBorder/20 transition-colors">
-                        <td class="py-3 px-4 text-vercelMuted">{{ h.date }}</td>
+                    <tr class="hover:bg-brandBorder/20 transition-colors">
+                        <td class="py-3 px-4 text-brandMuted">{{ h.date }}</td>
                         <td class="py-3 px-4 font-medium text-white">{{ h.project }}</td>
-                        <td class="py-3 px-4 text-vercelMuted">{{ h.format }}</td>
+                        <td class="py-3 px-4 text-brandMuted">{{ h.format }}</td>
                         <td class="py-3 px-4">{{ h.title }}</td>
                         <td class="py-3 px-4">
                             <div class="flex gap-2">

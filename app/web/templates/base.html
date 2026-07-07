@@ -217,11 +217,29 @@ async function generateStrategicMemory() {
     } catch (e) {
         alert("Erro de conexão: " + e.message);
         toast.remove();
+        window.__generatingCmoRecommendation = false;
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = originalText;
+            btnElem.classList.remove("opacity-50", "cursor-not-allowed");
+        }
     }
 }
 
-async function generateCmoRecommendation() {
+window.__generatingCmoRecommendation = false;
+
+async function generateCmoRecommendation(btnElem) {
+    if (window.__generatingCmoRecommendation) return;
     if (!confirm("Deseja gerar uma nova recomendação estratégica com base nos dados mais recentes?")) return;
+    
+    window.__generatingCmoRecommendation = true;
+    let originalText = "";
+    if (btnElem) {
+        btnElem.disabled = true;
+        originalText = btnElem.innerHTML;
+        btnElem.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Gerando...';
+        btnElem.classList.add("opacity-50", "cursor-not-allowed");
+    }
     
     const toast = document.createElement('div');
     toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandAccentPurple text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> O CMO Agent está pensando... (isso pode demorar)</div>';
@@ -249,11 +267,29 @@ async function generateCmoRecommendation() {
     } catch (e) {
         alert("Erro de conexão: " + e.message);
         toast.remove();
+        window.__generatingCmoRecommendation = false;
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = originalText;
+            btnElem.classList.remove("opacity-50", "cursor-not-allowed");
+        }
     }
 }
 
-async function createBriefingFromCmo(recommendationId) {
+window.__creatingBriefingFromCmo = false;
+
+async function createBriefingFromCmo(recommendationId, btnElem) {
+    if (window.__creatingBriefingFromCmo) return;
     if (!confirm("Isso criará um briefing em rascunho para revisão humana. Nenhuma semana será gerada automaticamente. Continuar?")) return;
+    
+    window.__creatingBriefingFromCmo = true;
+    let originalText = "";
+    if (btnElem) {
+        btnElem.disabled = true;
+        originalText = btnElem.innerHTML;
+        btnElem.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Criando briefing...';
+        btnElem.classList.add("opacity-50", "cursor-not-allowed");
+    }
     
     const toast = document.createElement('div');
     toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandAccentPurple text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> Convertendo recomendação em briefing...</div>';
@@ -284,6 +320,48 @@ async function createBriefingFromCmo(recommendationId) {
     } catch (e) {
         alert("Erro de conexão: " + e.message);
         toast.remove();
+        window.__generatingCmoRecommendation = false;
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = originalText;
+            btnElem.classList.remove("opacity-50", "cursor-not-allowed");
+        }
+    }
+}
+
+async function archiveStaleCmoRecommendations(btnElem) {
+    if (!confirm("Arquivar recomendações antigas e duplicadas, mantendo só a recomendação ativa mais recente?")) return;
+
+    let originalText = "";
+    if (btnElem) {
+        btnElem.disabled = true;
+        originalText = btnElem.innerHTML;
+        btnElem.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Arquivando...';
+        btnElem.classList.add("opacity-50", "cursor-not-allowed");
+    }
+
+    try {
+        const response = await fetch(`/cmo/recommendations/archive-stale`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ confirm: true })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            alert("Erro: " + (data.detail || response.statusText));
+            return;
+        }
+
+        alert(data.message || "Recomendações antigas arquivadas.");
+        window.location.reload();
+    } catch (e) {
+        alert("Erro de conexão: " + e.message);
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = originalText;
+            btnElem.classList.remove("opacity-50", "cursor-not-allowed");
+        }
     }
 }
 </script>

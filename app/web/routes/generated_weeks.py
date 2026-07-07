@@ -2,11 +2,11 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import os
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 
 router = APIRouter(prefix="/generated-weeks", tags=["generated-weeks"])
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "..", "templates"))
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/{folder_name}", response_class=HTMLResponse)
 async def get_generated_week(request: Request, folder_name: str):

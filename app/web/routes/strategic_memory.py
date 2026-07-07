@@ -3,11 +3,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import os
 from pydantic import BaseModel
 from typing import Optional
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter(prefix="/strategic-memory", tags=["strategic_memory"])
-brandos_service = BrandOSService()
+brandos_service = get_brandos_service()
 
 class GenerateMemoryRequest(BaseModel):
     confirm: bool

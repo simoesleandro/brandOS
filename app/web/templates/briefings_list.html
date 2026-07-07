@@ -4,30 +4,35 @@
 {% block content %}
 <div class="max-w-6xl mx-auto w-full">
     
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                <svg class="w-8 h-8 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Briefings Aprovados
-            </h1>
-            <p class="text-brandMuted mt-1">Recomendações estratégicas salvas pelo CMO Agent</p>
+    <div class="mb-8 workbench-hero p-6">
+        <div class="section-heading border-0 pb-0">
+            <div>
+                <p class="workbench-eyebrow mb-2">Etapa 02 · Briefing</p>
+                <h1 class="text-3xl font-bold text-white tracking-tight">Briefings</h1>
+                <p>Revise a estratégia antes de gerar posts. Um briefing aprovado vira uma semana editorial.</p>
+            </div>
+            <a href="/cmo/recommendations" class="btn action-secondary px-5 py-3">Ver recomendações CMO</a>
         </div>
     </div>
 
     {% if not briefings %}
-    <div class="bg-brandSidebar border border-brandBorder rounded-xl p-12 text-center">
+    <div class="operation-card p-12 text-center">
         <svg class="w-12 h-12 text-brandMuted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         <h3 class="text-lg font-medium text-white mb-2">Nenhum briefing salvo ainda</h3>
         <p class="text-brandMuted max-w-md mx-auto">Vá para a Agenda Editorial, gere uma recomendação estratégica com o CMO Agent e salve como briefing.</p>
-        <a href="/calendar" class="mt-6 inline-flex items-center gap-2 bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
-            Ir para Agenda Editorial
+        <a href="/cmo/recommendations" class="mt-6 btn action-primary inline-flex items-center gap-2">
+            Ir para CMO Agent
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
         </a>
     </div>
     {% else %}
-    <div class="grid gap-4">
-        {% for b in briefings %}
-        <div class="bg-brandSidebar border border-brandBorder rounded-xl p-5 hover:border-brandAccentPurple/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+    {% set active_briefings = briefings | rejectattr('status', 'equalto', 'archived') | list %}
+    {% set archived_briefings = briefings | selectattr('status', 'equalto', 'archived') | list %}
+    
+    {% if active_briefings %}
+    <div class="grid gap-4 mb-10">
+        {% for b in active_briefings %}
+        <div class="operation-list-item p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
                     <h3 class="text-lg font-medium text-white">{{ b.filename }}</h3>
@@ -45,6 +50,8 @@
                     <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Revisado</span>
                     {% elif b.status == 'generated' %}
                     <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30">Semana Gerada</span>
+                    {% elif b.status == 'archived' %}
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1"><i class="ph ph-archive"></i> Arquivado</span>
                     {% else %}
                     <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">{{ b.status }}</span>
                     {% endif %}
@@ -62,30 +69,74 @@
             </div>
             
             <div class="flex items-center gap-3">
-                <a href="/briefings/{{ b.filename }}" class="btn-secondary px-4 py-2">
+                <a href="/briefings/{{ b.filename }}" class="btn action-secondary px-4 py-2">
                     <i class="ph ph-eye"></i> Ver
                 </a>
                 {% if b.status == 'draft' or b.status == 'reviewed' or b.status == 'approved' or b.status == 'briefing_aprovado' %}
-                <a href="/briefings/{{ b.filename }}/edit" class="btn-secondary px-3 py-2" title="Editar">
+                <a href="/briefings/{{ b.filename }}/edit" class="btn action-secondary px-3 py-2" title="Editar">
                     <i class="ph ph-pencil-simple"></i>
                 </a>
                 {% endif %}
                 
                 {% if b.status == 'draft' or b.status == 'reviewed' %}
-                <button onclick="approveBriefing('{{ b.filename }}')" class="btn-secondary px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10" title="Aprovar">
+                <button onclick="approveBriefing('{{ b.filename }}')" class="btn action-secondary px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10" title="Aprovar">
                     <i class="ph ph-check-circle"></i> Aprovar
                 </button>
                 {% endif %}
                 
                 {% if b.status == 'approved' or b.status == 'briefing_aprovado' %}
-                <button onclick="window.location.href='/briefings/{{ b.filename }}'" class="bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2" title="Gerar Semana">
+                <button onclick="window.location.href='/briefings/{{ b.filename }}'" class="btn action-primary px-4 py-2 flex items-center gap-2" title="Gerar Semana">
                     <i class="ph ph-magic-wand"></i> Gerar
                 </button>
+                {% endif %}
+                
+                {% if (b.status == 'generated' or b.generated_folder) and b.generated_folder %}
+                <a href="/generated-weeks/{{ b.generated_folder }}" class="btn action-secondary px-3 py-2 flex items-center gap-2" title="Ver Semana Gerada">
+                    <i class="ph ph-folder"></i> Ver Semana
+                </a>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
+    {% endif %}
+    {% if archived_briefings %}
+    <details class="group bg-brandSidebar border border-brandBorder rounded-xl overflow-hidden mt-8">
+        <summary class="p-5 cursor-pointer font-medium text-white flex items-center justify-between hover:bg-brandBorder/10 transition-colors">
+            <span class="flex items-center gap-2 text-brandMuted group-hover:text-white transition-colors">
+                <i class="ph ph-archive text-xl"></i> Briefings Arquivados ({{ archived_briefings|length }})
+            </span>
+            <i class="ph ph-caret-down text-brandMuted transition-transform group-open:rotate-180"></i>
+        </summary>
+        <div class="p-5 pt-0 grid gap-4 border-t border-brandBorder mt-1 pt-4">
+            {% for b in archived_briefings %}
+            <div class="operation-list-item p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-1">
+                        <h3 class="text-base font-medium text-white">{{ b.filename }}</h3>
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
+                            <i class="ph ph-archive"></i> Arquivado
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-brandMuted">
+                        <span class="flex items-center gap-1.5">
+                            <i class="ph ph-calendar-blank"></i> Criado em: {{ b.created_at }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="ph ph-article"></i> Fonte: {{ b.source }}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/briefings/{{ b.filename }}" class="btn action-secondary px-3 py-1.5 text-sm">
+                        <i class="ph ph-eye"></i> Ver
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
     {% endif %}
 
 </div>

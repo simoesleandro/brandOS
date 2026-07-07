@@ -1,17 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8">
-    <a href="/cmo/recommendations" class="text-brandMuted hover:text-white flex items-center gap-2 mb-4 transition-colors">
-        <i class="ph ph-arrow-left"></i> Voltar para Lista
-    </a>
-    
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="workbench-hero mb-8">
+    <div>
+        <a href="/cmo/recommendations" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+            <i class="ph ph-arrow-left"></i> Voltar para recomendações
+        </a>
+        <div class="workbench-eyebrow">Etapa 01 · Decisão estratégica</div>
+        <h1>Recomendação Estratégica</h1>
         <div>
-            <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-                <i class="ph ph-robot text-brandPrimary"></i>
-                Recomendação Estratégica
-            </h1>
             <div class="flex items-center gap-3 text-sm text-brandMuted">
                 <span class="font-mono bg-[#1a1b23] px-2 py-1 rounded border border-white/5"><i class="ph ph-calendar-blank"></i> {{ recommendation.generated_at }}</span>
                 <span><i class="ph ph-clock-counter-clockwise"></i> {{ recommendation.window_days }} dias analisados</span>
@@ -27,16 +24,16 @@
                 {% endif %}
             </div>
         </div>
+    </div>
         
-        <div class="flex gap-3">
-            <button onclick="createBriefingFromCmo('{{ recommendation.id }}')" class="btn-primary flex items-center gap-2">
+    <div class="flex gap-3">
+            <button type="button" onclick="createBriefingFromCmo('{{ recommendation.id }}', this)" class="btn action-primary flex items-center gap-2">
                 <i class="ph ph-magic-wand"></i> Usar como briefing base
             </button>
-        </div>
     </div>
 </div>
 
-<div class="card p-8 bg-[#020205] border border-white/5 shadow-2xl">
+<div class="operation-card p-8 bg-[#020205]">
     <div class="prose prose-invert prose-brand max-w-none">
         {{ recommendation.html_content | safe }}
     </div>

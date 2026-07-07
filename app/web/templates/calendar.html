@@ -1,34 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8 flex justify-between items-end">
+<div class="workbench-hero mb-8">
     <div>
-        <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brandAccentPurple to-brandAccent flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            </div>
-            Agenda Editorial
-        </h1>
-        <p class="text-brandSecondary">Planeje, acompanhe e organize as próximas publicações do BrandOS.</p>
+        <div class="workbench-eyebrow">Etapa 04 · Agenda editorial</div>
+        <h1>Agenda Editorial</h1>
+        <p>Planeje, acompanhe e organize as próximas publicações do BrandOS com a ajuda do CMO Agent.</p>
     </div>
-    <a href="/generate" class="btn btn-primary shadow-[0_0_20px_rgba(139,92,246,0.4)] px-6 py-3">
-        GERAR NOVA SEMANA
-    </a>
-</div>
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="/publications" class="btn action-secondary">Ver publicações</a>
+        <a href="/generate" class="btn action-primary">Gerar semana</a>
+    </div>
 </div>
 
 <!-- CMO Agent -->
-<div class="cockpit-card p-6 mb-8 border-l-4 border-l-brandAccent relative overflow-hidden group">
-    <div class="absolute inset-0 bg-gradient-to-r from-brandAccent/10 to-transparent opacity-50 pointer-events-none"></div>
-    <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="operation-card p-6 mb-8 relative overflow-hidden group">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h2 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
-                <svg class="w-5 h-5 text-brandAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                CMO Agent
-            </h2>
+            <div class="workbench-eyebrow">Assistente estratégico</div>
+            <h2 class="text-xl font-bold text-white mb-1">CMO Agent</h2>
             <p class="text-brandSecondary text-sm">Analise histórico, agenda e telemetria para sugerir a próxima semana editorial.</p>
         </div>
-        <button id="btn-cmo-plan" class="btn btn-primary px-6 py-2 whitespace-nowrap" onclick="planNextWeek()">
+        <button id="btn-cmo-plan" class="btn action-primary whitespace-nowrap" onclick="planNextWeek()">
             Planejar próxima semana com IA
         </button>
     </div>
@@ -47,8 +40,8 @@
         </div>
         <div class="flex gap-3 justify-end items-center">
             <div id="briefing-feedback" class="text-sm font-mono mr-4"></div>
-            <button class="btn btn-ghost border-brandBorder/50 hover:bg-white/5" onclick="copyCMO()">Copiar recomendação</button>
-            <button id="btn-save-briefing" class="btn btn-secondary" onclick="saveCMOBriefing()">Salvar como briefing da próxima semana</button>
+            <button class="btn action-secondary" onclick="copyCMO()">Copiar recomendação</button>
+            <button id="btn-save-briefing" class="btn action-primary" onclick="saveCMOBriefing()">Salvar como briefing da próxima semana</button>
         </div>
     </div>
 </div>
@@ -155,23 +148,23 @@
 
 <!-- Cards de resumo -->
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
-    <div class="cockpit-card p-5 border-t-2 border-brandAccentPurple text-center">
+    <div class="operation-card p-5 text-center">
         <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Agendadas</p>
         <p class="text-3xl font-extrabold text-white">{{ counts.agendadas }}</p>
     </div>
-    <div class="cockpit-card p-5 border-t-2 border-brandAccentCyan text-center">
+    <div class="operation-card p-5 text-center">
         <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Prontas</p>
         <p class="text-3xl font-extrabold text-white">{{ counts.prontas }}</p>
     </div>
-    <div class="cockpit-card p-5 border-t-2 border-status-green text-center">
+    <div class="operation-card p-5 text-center">
         <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Publicadas</p>
         <p class="text-3xl font-extrabold text-white">{{ counts.publicadas }}</p>
     </div>
-    <div class="cockpit-card p-5 border-t-2 border-brandAccent text-center">
+    <div class="operation-card p-5 text-center">
         <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Pendentes</p>
         <p class="text-3xl font-extrabold text-white">{{ counts.pendentes }}</p>
     </div>
-    <div class="cockpit-card p-5 border-t-2 border-status-red text-center">
+    <div class="operation-card p-5 text-center">
         <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Em Revisão</p>
         <p class="text-3xl font-extrabold text-white">{{ counts.revisao }}</p>
     </div>
@@ -205,7 +198,7 @@
     {% if items %}
         <div class="space-y-3">
             {% for item in items %}
-            <div class="cockpit-card p-4 hover:border-brandAccentPurple/50 transition-colors flex items-center justify-between group">
+            <div class="operation-list-item flex flex-col lg:flex-row lg:items-center justify-between gap-4 group">
                 <div class="flex items-center gap-4">
                     <div class="flex-shrink-0 w-12 h-12 bg-[#020205] rounded border border-brandBorder/50 flex flex-col items-center justify-center">
                         {% if item.scheduled_for %}
@@ -235,12 +228,12 @@
                         <div class="mt-2 flex gap-2">
                             {% if item.scheduled_time %}
                             <span class="text-[9px] font-mono text-brandMuted border border-brandBorder/50 px-1.5 py-0.5 rounded bg-brandBg/50">
-                                ⏱ {{ item.scheduled_time }}
+                                {{ item.scheduled_time }}
                             </span>
                             {% endif %}
                             {% if item.priority == 'alta' or item.priority == 'high' %}
                             <span class="text-[9px] font-mono text-status-red border border-status-red/30 px-1.5 py-0.5 rounded bg-status-red/10">
-                                🔥 ALTA PRIORIDADE
+                                ALTA PRIORIDADE
                             </span>
                             {% elif item.priority == 'baixa' or item.priority == 'low' %}
                             <span class="text-[9px] font-mono text-brandMuted border border-brandBorder/50 px-1.5 py-0.5 rounded bg-brandBg/50">
@@ -259,7 +252,7 @@
                             <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 px-3 py-1 text-[10px]">SCHEDULED</span>
                             {% if item.scheduled_date %}
                             <span class="text-[10px] text-brandAccentPurple border border-brandAccentPurple/30 px-2 py-0.5 rounded bg-brandAccentPurple/10 font-mono">
-                                🗓️ {{ item.scheduled_date }} {{ item.scheduled_time }}
+                                {{ item.scheduled_date }} {{ item.scheduled_time }}
                             </span>
                             {% endif %}
                         {% elif item.scheduled_for and item.status != 'published' %}
@@ -272,26 +265,26 @@
                     {% if item.source == 'generated_from_briefing' and item.generated_folder %}
                         {% if not item.linked_to_item_id and not item.asset_role and item.status != 'used_as_asset' %}
                             {% if item.status == 'approved' %}
-                                <button onclick="openScheduleModal('{{ item.item_id }}')" class="btn-primary bg-brandAccentPurple hover:bg-brandAccentPurple/80 px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                <button onclick="openScheduleModal('{{ item.item_id }}')" class="btn action-primary px-4 py-2 lg:opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
                                     Agendar
                                 </button>
                             {% elif item.status == 'scheduled' %}
-                                <button onclick="openScheduleModal('{{ item.item_id }}', true)" class="btn-secondary px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                <button onclick="openScheduleModal('{{ item.item_id }}', true)" class="btn action-secondary px-4 py-2 lg:opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
                                     Reagendar
                                 </button>
-                                <button onclick="unschedulePost('{{ item.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 border border-red-500/30 px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
+                                <button onclick="unschedulePost('{{ item.item_id }}')" class="btn btn-ghost text-red-400 hover:text-red-300 border border-red-500/30 px-4 py-2 lg:opacity-0 group-hover:opacity-100 transition-opacity text-xs whitespace-nowrap">
                                     Remover agendamento
                                 </button>
                             {% endif %}
                         {% endif %}
                         
-                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn btn-secondary px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
+                        <a href="/generated-weeks/{{ item.generated_folder }}" class="btn action-secondary px-4 py-2 lg:opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
                             REVISAR SEMANA
                             <svg class="w-3.5 h-3.5 ml-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         </a>
                     {% endif %}
                     
-                    <a href="{{ item.url }}" class="btn btn-ghost border-brandBorder/50 text-brandSecondary hover:text-white px-4 py-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
+                    <a href="{{ item.url }}" class="btn action-secondary px-4 py-2 lg:opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-xs">
                         ABRIR PEÇA
                         <svg class="w-3.5 h-3.5 ml-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </a>
@@ -300,7 +293,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="cockpit-card p-8 border-dashed border-brandBorder/50 text-center bg-[#020205]/50">
+        <div class="operation-card p-8 border-dashed border-brandBorder/50 text-center bg-[#020205]/50">
             <p class="text-brandMuted text-sm">{{ empty_msg }}</p>
         </div>
     {% endif %}
@@ -310,7 +303,7 @@
 {% set has_any = groups.hoje or groups.proximos_7_dias or groups.sem_data or groups.publicadas or groups.futuras or groups.passadas %}
 
 {% if not has_any %}
-<div class="cockpit-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
+<div class="operation-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
     <div class="w-16 h-16 rounded-full border border-brandBorder flex items-center justify-center mb-6 shadow-inner">
         <svg class="w-6 h-6 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
     </div>
@@ -368,8 +361,8 @@
         </div>
         
         <div class="flex items-center justify-end gap-3 mt-6">
-            <button onclick="closeScheduleModal()" class="btn-ghost text-brandMuted hover:text-white px-4 py-2 text-sm">Cancelar</button>
-            <button onclick="submitSchedule()" class="btn-primary px-4 py-2 text-sm bg-brandAccentPurple hover:bg-brandAccentPurple/80">Confirmar</button>
+            <button onclick="closeScheduleModal()" class="btn action-secondary text-sm">Cancelar</button>
+            <button onclick="submitSchedule()" class="btn action-primary text-sm">Confirmar</button>
         </div>
     </div>
 </div>

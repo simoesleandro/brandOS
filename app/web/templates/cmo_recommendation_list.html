@@ -1,92 +1,172 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="mb-8 flex justify-between items-center">
-    <div>
-        <h1 class="text-3xl font-bold text-white mb-2">CMO Agent</h1>
-        <p class="text-brandMuted">Recomendações estratégicas geradas para orientar os próximos ciclos.</p>
-    </div>
-    <button onclick="generateCmoRecommendation()" class="btn-primary flex items-center gap-2">
-        <i class="ph ph-sparkle"></i> Gerar Recomendação
-    </button>
+{% macro recommendation_meta(rec) %}
+<div class="flex flex-wrap items-center gap-2 text-xs text-brandMuted">
+    <span class="font-mono px-2 py-1 bg-[#1a1b23] rounded border border-white/5">
+        {{ rec.generated_at[:10] if rec.generated_at != 'Data desconhecida' else 'Data desconhecida' }}
+    </span>
+    <span><i class="ph ph-clock-counter-clockwise"></i> {{ rec.window_days }} dias</span>
+    <span><i class="ph ph-article"></i> {{ rec.source_posts_count }} posts base</span>
+    {% if rec.used_strategic_memory %}
+    <span class="text-brandPrimary font-semibold"><i class="ph ph-brain"></i> com memória</span>
+    {% else %}
+    <span class="text-yellow-500 font-semibold"><i class="ph ph-warning"></i> sem memória</span>
+    {% endif %}
 </div>
+{% endmacro %}
 
-{% if not recommendations %}
-<div class="card p-12 text-center">
-    <i class="ph ph-robot text-6xl text-brandMuted mb-4"></i>
-    <h3 class="text-xl font-bold text-white mb-2">Nenhuma recomendação gerada ainda</h3>
-    <p class="text-brandMuted mb-6">O CMO Agent ainda não gerou nenhuma recomendação estratégica. Clique no botão acima para começar.</p>
-    <button onclick="generateCmoRecommendation()" class="btn-primary inline-flex items-center gap-2">
-        <i class="ph ph-sparkle"></i> Gerar Primeira Recomendação
-    </button>
-</div>
-{% else %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {% for rec in recommendations %}
-    <div class="card p-6 flex flex-col justify-between">
+{% macro recommendation_badge(rec) %}
+    {% if rec.workflow_state == 'briefing_created' %}
+    <span class="badge bg-brandAccent/15 text-brandAccent border border-brandAccent/30">{{ rec.workflow_label }}</span>
+    {% elif rec.workflow_state == 'archived' %}
+    <span class="badge bg-brandMuted/10 text-brandMuted border border-brandMuted/20">{{ rec.workflow_label }}</span>
+    {% else %}
+    <span class="badge bg-brandPrimary/15 text-brandPrimary border border-brandPrimary/30">{{ rec.workflow_label }}</span>
+    {% endif %}
+{% endmacro %}
+
+{% block content %}
+<div class="mb-8 workbench-hero p-6">
+    <div class="section-heading border-0 pb-0">
         <div>
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-xs font-mono px-2 py-1 bg-[#1a1b23] text-brandMuted rounded border border-white/5">
-                    {{ rec.generated_at[:10] }}
-                </span>
-                {% if rec.used_strategic_memory %}
-                <span class="text-xs font-bold px-2 py-1 bg-brandPrimary/10 text-brandPrimary rounded border border-brandPrimary/20 flex items-center gap-1">
-                    <i class="ph ph-brain"></i> Usou Memória
-                </span>
-                {% else %}
-                <span class="text-xs font-bold px-2 py-1 bg-yellow-500/10 text-yellow-500 rounded border border-yellow-500/20 flex items-center gap-1">
-                    <i class="ph ph-warning"></i> Sem Memória
-                </span>
-                {% endif %}
-            </div>
-            <h3 class="text-lg font-bold text-white mb-2">Recomendação Estratégica</h3>
-            <div class="text-sm text-brandMuted space-y-1 mb-6">
-                <p><i class="ph ph-clock-counter-clockwise mr-1"></i> Janela analisada: {{ rec.window_days }} dias</p>
-                <p><i class="ph ph-article mr-1"></i> Posts base: {{ rec.source_posts_count }}</p>
-            </div>
+            <p class="workbench-eyebrow mb-2">Etapa 01 · Estratégia</p>
+            <h1 class="text-3xl font-bold text-white">CMO Agent</h1>
+            <p>Use esta tela para decidir a próxima direção editorial. A recomendação só vira produção depois que você criar e revisar um briefing.</p>
         </div>
-        <div class="flex flex-col gap-2">
-            <a href="/cmo/recommendations/{{ rec.id }}" class="btn-secondary w-full text-center">Ver Recomendação</a>
-            <button onclick="createBriefingFromCmo('{{ rec.id }}')" class="btn-primary w-full text-center flex items-center justify-center gap-2">
-                <i class="ph ph-magic-wand"></i> Criar briefing base
+        <div class="flex flex-col sm:flex-row gap-3">
+            {% if recommendation_history or archived_recommendations %}
+            <button type="button" onclick="archiveStaleCmoRecommendations(this)" class="btn action-secondary flex items-center gap-2 px-5 py-3">
+                <i class="ph ph-broom"></i> Arquivar antigas
+            </button>
+            {% endif %}
+            <button type="button" onclick="generateCmoRecommendation(this)" class="btn action-primary flex items-center gap-2 px-5 py-3">
+                <i class="ph ph-sparkle"></i> Gerar recomendação
             </button>
         </div>
     </div>
-    {% endfor %}
+</div>
+
+{% if error_msg %}
+<div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 flex gap-3 items-center">
+    <i class="ph ph-warning-circle text-xl"></i>
+    <div>{{ error_msg }}</div>
 </div>
 {% endif %}
 
-<script>
-async function generateCmoRecommendation() {
-    if (!confirm("Deseja gerar uma nova recomendação estratégica com base nos dados mais recentes?")) return;
-    
-    const toast = document.createElement('div');
-    toast.innerHTML = '<div class="fixed bottom-4 right-4 bg-brandPrimary text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3"><i class="ph ph-spinner animate-spin"></i> O CMO Agent está pensando... (isso pode demorar)</div>';
-    document.body.appendChild(toast);
-    
-    try {
-        const response = await fetch(`/cmo/recommendation/generate`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                confirm: true,
-                window_days: 30
-            })
-        });
-        
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            alert("Erro: " + (data.detail || response.statusText));
-            toast.remove();
-            return;
-        }
-        
-        const result = await response.json();
-        window.location.href = `/cmo/recommendations/${result.recommendation_id}`;
-    } catch (e) {
-        alert("Erro de conexão: " + e.message);
-        toast.remove();
-    }
-}
-</script>
+{% if duplicate_count %}
+<div class="mb-6 operation-card p-4 text-sm text-brandMuted flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <p>Encontrei {{ duplicate_count }} recomendação(ões) duplicada(s) no índice local e escondi da fila principal.</p>
+    <button type="button" onclick="archiveStaleCmoRecommendations(this)" class="btn action-secondary text-xs">
+        Arquivar ruído antigo
+    </button>
+</div>
+{% endif %}
+
+{% if active_recommendation %}
+<div class="operation-card p-6 mb-8 border-brandPrimary/30">
+    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+        <div class="space-y-4">
+            <div class="flex flex-wrap items-center gap-3">
+                {{ recommendation_badge(active_recommendation) }}
+                {{ recommendation_meta(active_recommendation) }}
+            </div>
+            <div>
+                <p class="workbench-eyebrow mb-2">Próxima decisão</p>
+                <h2 class="text-2xl font-bold text-white mb-2">Recomendação estratégica ativa</h2>
+                <p class="text-brandSecondary max-w-3xl">
+                    Leia a recomendação. Se a direção fizer sentido, transforme em briefing base e revise antes de gerar qualquer semana.
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col gap-2 min-w-[220px]">
+            <a href="/cmo/recommendations/{{ active_recommendation.id }}" class="btn action-secondary w-full">Ler recomendação</a>
+            <button type="button" onclick="createBriefingFromCmo('{{ active_recommendation.id }}', this)" class="btn action-primary w-full flex items-center justify-center gap-2">
+                <i class="ph ph-magic-wand"></i> Criar briefing base
+            </button>
+            <button type="button" onclick="archiveCmoRecommendation('{{ active_recommendation.id }}')" class="btn action-secondary w-full text-brandMuted hover:text-white">
+                Arquivar
+            </button>
+        </div>
+    </div>
+</div>
+{% elif not error_msg %}
+<div class="operation-card p-12 text-center mb-8">
+    <i class="ph ph-robot text-6xl text-brandMuted mb-4"></i>
+    <h3 class="text-xl font-bold text-white mb-2">Nenhuma recomendação ativa</h3>
+    <p class="text-brandMuted mb-6">Gere uma recomendação estratégica para começar a próxima semana editorial.</p>
+    <button type="button" onclick="generateCmoRecommendation(this)" class="btn action-primary inline-flex items-center gap-2">
+        <i class="ph ph-sparkle"></i> Gerar primeira recomendação
+    </button>
+</div>
+{% endif %}
+
+{% if recommendation_history %}
+<div class="mb-8">
+    <details class="group bg-[#0a0a0f] border border-brandBorder rounded-lg overflow-hidden">
+        <summary class="flex justify-between items-center cursor-pointer p-4 select-none hover:bg-white/5 transition-colors">
+            <div>
+                <h3 class="text-lg font-bold text-white">Histórico CMO limpo</h3>
+                <p class="text-sm text-brandMuted">Recomendações anteriores ou que já viraram briefing. Elas ficam fora da fila principal.</p>
+            </div>
+            <span class="flex items-center gap-2 text-brandMuted">
+                {{ recommendation_history|length }}
+                <i class="ph ph-caret-down transition-transform group-open:rotate-180"></i>
+            </span>
+        </summary>
+        <div class="p-6 border-t border-brandBorder grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for rec in recommendation_history %}
+            <div class="operation-card p-5 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        {{ recommendation_badge(rec) }}
+                        <span class="text-xs font-mono text-brandMuted">{{ rec.generated_at[:10] if rec.generated_at != 'Data desconhecida' else 'Desconhecida' }}</span>
+                    </div>
+                    <h4 class="text-base font-bold text-white">Recomendação estratégica</h4>
+                    {{ recommendation_meta(rec) }}
+                </div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <a href="/cmo/recommendations/{{ rec.id }}" class="btn action-secondary w-full text-center">Ver recomendação</a>
+                    {% if rec.workflow_state == 'briefing_created' and rec.briefing_filename %}
+                    <a href="/briefings/{{ rec.briefing_filename }}" class="btn action-primary w-full text-center">Abrir briefing</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+</div>
+{% endif %}
+
+{% if archived_recommendations %}
+<div class="mt-8">
+    <details class="group bg-[#0a0a0f] border border-brandBorder rounded-lg overflow-hidden">
+        <summary class="flex justify-between items-center cursor-pointer p-4 select-none hover:bg-white/5 transition-colors">
+            <h3 class="text-sm font-bold text-brandMuted flex items-center gap-2 uppercase tracking-widest">
+                <i class="ph ph-archive"></i> Arquivadas ({{ archived_recommendations|length }})
+            </h3>
+            <i class="ph ph-caret-down transition-transform group-open:rotate-180 text-brandMuted"></i>
+        </summary>
+        <div class="p-6 border-t border-brandBorder grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for rec in archived_recommendations %}
+            <div class="operation-card p-5 flex flex-col justify-between opacity-70">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-xs font-mono px-2 py-1 bg-[#1a1b23] text-brandMuted rounded border border-white/5">
+                            {{ rec.generated_at[:10] if rec.generated_at != 'Data desconhecida' else 'Desconhecida' }}
+                        </span>
+                        {{ recommendation_badge(rec) }}
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Recomendação estratégica</h3>
+                    <div class="text-sm text-brandMuted space-y-1 mb-6">
+                        <p><i class="ph ph-clock-counter-clockwise mr-1"></i> Janela: {{ rec.window_days }} dias</p>
+                    </div>
+                </div>
+                <a href="/cmo/recommendations/{{ rec.id }}" class="btn action-secondary w-full text-center">Ver recomendação</a>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+</div>
+{% endif %}
+
 {% endblock %}

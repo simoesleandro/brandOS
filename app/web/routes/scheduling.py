@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 
 router = APIRouter(prefix="/schedule", tags=["scheduling"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.post("/post/{item_id}")
 async def schedule_post(item_id: str, request: Request):

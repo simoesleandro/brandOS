@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 import os
 
 router = APIRouter(prefix="/briefings", tags=["briefings"])
@@ -11,7 +11,7 @@ base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 templates = Jinja2Templates(directory=os.path.join(base_dir, "app", "web", "templates"))
 
 # Instancia o serviço
-service = BrandOSService(base_dir)
+service = get_brandos_service()
 
 @router.get("", response_class=HTMLResponse)
 async def list_briefings(request: Request):
@@ -130,6 +130,16 @@ async def approve_briefing_action(filename: str, payload: ApproveBriefingRequest
         raise HTTPException(status_code=400, detail="Confirmação necessária.")
         
     result = service.approve_briefing(filename, confirm=payload.confirm)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+@router.post("/{filename}/archive")
+async def archive_briefing_action(filename: str, payload: ApproveBriefingRequest, request: Request):
+    if not payload.confirm:
+        raise HTTPException(status_code=400, detail="Confirmação necessária.")
+        
+    result = service.archive_briefing(filename, confirm=payload.confirm)
     if result.get("status") == "error":
         raise HTTPException(status_code=400, detail=result.get("message"))
     return result

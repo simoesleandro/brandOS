@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter(prefix="/history", tags=["history"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/")
 async def get_history(request: Request):
@@ -22,7 +22,7 @@ async def get_history(request: Request):
             items = [entry]
             
         for item in items:
-            is_main, _ = BrandOSService._is_main_publication(None, item)
+            is_main, _ = service._is_main_publication(item)
             
             # Formata os dados para a view
             row = {

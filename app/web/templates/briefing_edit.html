@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-8">
-    <a href="/briefings/{{ filename }}" class="text-brandMuted hover:text-white flex items-center gap-2 mb-4 transition-colors">
-        <i class="ph ph-arrow-left"></i> Voltar para Briefing
-    </a>
-    <h1 class="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-        <i class="ph ph-pencil-simple text-brandPrimary"></i>
-        Editar Briefing
-    </h1>
-    <p class="text-sm text-brandMuted">Altere o conteúdo do briefing. Não remova os metadados do topo (Status, Fonte, Recommendation ID).</p>
+<div class="workbench-hero mb-8">
+    <div>
+        <a href="/briefings/{{ filename }}" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+            <i class="ph ph-arrow-left"></i> Voltar para briefing
+        </a>
+        <div class="workbench-eyebrow">Etapa 02 · Ajuste humano</div>
+        <h1>Editar Briefing</h1>
+        <p>Altere o conteúdo do briefing sem remover os metadados do topo.</p>
+    </div>
 </div>
 
-<div class="card p-6 bg-[#020205] border border-white/5 shadow-2xl">
+<div class="operation-card p-6 bg-[#020205]">
     <textarea id="briefingContent" class="w-full bg-[#1a1b23] text-white font-mono text-sm p-4 rounded-lg border border-white/10 h-[600px] mb-4 focus:outline-none focus:border-brandPrimary focus:ring-1 focus:ring-brandPrimary" spellcheck="false">{{ content }}</textarea>
     
     <div class="flex justify-end gap-3 mt-6">
-        <button onclick="saveBriefing()" class="btn-primary flex items-center gap-2">
+        <button onclick="saveBriefing()" class="btn action-primary flex items-center gap-2">
             <i class="ph ph-floppy-disk"></i> Salvar Alterações
         </button>
     </div>

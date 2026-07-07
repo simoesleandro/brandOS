@@ -20,10 +20,14 @@
 {% endmacro %}
 
 <div class="space-y-8">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Ops Dashboard</h1>
-            <p class="text-brandSecondary">Painel Tático de Operação Editorial.</p>
+    <div class="workbench-hero p-6">
+        <div class="section-heading border-0 pb-0">
+            <div>
+                <p class="workbench-eyebrow mb-2">Operação diária</p>
+                <h1 class="text-3xl font-bold tracking-tight text-white">Painel operacional</h1>
+                <p>Use esta tela para destravar fila, agendamento, publicação e aprendizado sem sair do fluxo editorial.</p>
+            </div>
+            <a href="/" class="btn action-secondary px-5 py-3">Voltar à próxima ação</a>
         </div>
     </div>
     
@@ -46,41 +50,41 @@
 
     <!-- SECTION A: KPIs -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Total</p>
             <p class="text-2xl font-bold text-white">{{ counts.total_main_posts }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Gerados</p>
             <p class="text-2xl font-bold text-white">{{ counts.generated_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Editados</p>
             <p class="text-2xl font-bold text-white">{{ counts.edited_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Aprovados</p>
             <p class="text-2xl font-bold text-brandAccentCyan">{{ counts.approved_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Agendados</p>
             <p class="text-2xl font-bold text-brandAccentPurple">{{ counts.scheduled_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205]">
+        <div class="operation-card p-4">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Publicados</p>
             <p class="text-2xl font-bold text-green-400">{{ counts.published_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205] border-brandAccentCyan/30">
+        <div class="operation-card p-4 border-brandAccentCyan/30">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Prontos p/ Agendar</p>
             <p class="text-2xl font-bold text-brandAccentCyan">{{ counts.ready_to_schedule_count }}</p>
         </div>
-        <div class="cockpit-card p-4 bg-[#020205] border-red-500/30 relative overflow-hidden group">
+        <div class="operation-card p-4 border-red-500/30 relative overflow-hidden group">
             <p class="text-[10px] text-red-400 uppercase tracking-widest font-mono mb-1">Atrasados</p>
             <p class="text-2xl font-bold text-red-400 font-heading">{{ counts.overdue_count }}</p>
         </div>
 
         <!-- KPI Aprendizados (Fase 5.4) -->
-        <div class="cockpit-card p-4 bg-[#020205] border-brandPrimary/30 relative overflow-hidden group">
+        <div class="operation-card p-4 bg-[#020205] border-brandPrimary/30 relative overflow-hidden group">
             <div class="absolute -right-2 -bottom-2 text-brandPrimary/10 group-hover:scale-110 transition-transform">
                 <i class="ph ph-brain text-5xl"></i>
             </div>
@@ -92,7 +96,12 @@
 </div>
 
     <!-- SECTION B: Pipeline Visual -->
-    <h2 class="text-sm font-bold text-brandMuted uppercase tracking-widest font-mono mb-4 border-b border-brandBorder/50 pb-2">Pipeline Editorial</h2>
+    <div class="section-heading mb-4">
+        <div>
+            <h2 class="text-xl font-bold">Pipeline editorial</h2>
+            <p>Mova cada publicação para a próxima etapa concreta.</p>
+        </div>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 pb-4">
         {% for col_status, col_name, color_class in [
             ('draft', 'Rascunhos', 'text-gray-500'),
@@ -105,14 +114,14 @@
             ('discarded', 'Descartados', 'text-red-500')
         ] %}
         {% if pipeline_groups.get(col_status) or col_status != 'discarded' %}
-        <div class="bg-brandSidebar/30 border border-brandBorder rounded-lg flex flex-col h-[500px]">
+        <div class="operation-card flex flex-col h-[500px]">
             <div class="p-3 border-b border-brandBorder/50 flex justify-between items-center bg-[#020205]/80 rounded-t-lg">
                 <span class="text-xs font-bold uppercase tracking-wider {{ color_class }}">{{ col_name }}</span>
                 <span class="text-xs text-brandMuted bg-brandBg px-2 py-0.5 rounded">{{ pipeline_groups[col_status]|length }}</span>
             </div>
             <div class="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
                 {% for item in pipeline_groups[col_status] %}
-                <div class="bg-[#020205] border border-brandBorder p-3 rounded hover:border-brandAccentPurple/50 transition-colors group">
+                <div class="operation-list-item p-3 group">
                     <p class="text-sm font-medium text-white mb-2 line-clamp-2">{{ item.title or 'Sem título' }}{% if not item.identifier %} <span class='bg-red-500/20 text-red-500 text-[10px] px-2 py-0.5 rounded ml-2 uppercase tracking-wider font-bold'>Item inválido</span>{% endif %}</p>
                     <div class="flex justify-between items-end">
                         <div class="flex flex-col gap-1">
@@ -283,14 +292,14 @@
         <i class="ph ph-brain text-xl"></i>
         Memória Estratégica
     </h2>
-    <div class="card p-6 bg-[#020205] border border-brandPrimary/20 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="operation-card p-6 border-brandPrimary/20 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
             <h3 class="text-lg font-bold text-white mb-1">Gerar aprendizado do ciclo anterior</h3>
             <p class="text-sm text-brandMuted">Analisa os posts publicados e os aprendizados extraídos para gerar contexto ao CMO Agent.</p>
         </div>
         <div class="flex gap-4">
-            <a href="/strategic-memory" class="btn-secondary whitespace-nowrap">Ver Histórico</a>
-            <button onclick="generateStrategicMemory()" class="btn-primary flex items-center gap-2 whitespace-nowrap">
+            <a href="/strategic-memory" class="btn action-secondary whitespace-nowrap">Ver histórico</a>
+            <button onclick="generateStrategicMemory()" class="btn action-primary flex items-center gap-2 whitespace-nowrap">
                 <i class="ph ph-sparkle"></i> Nova Memória Estratégica
             </button>
         </div>
@@ -300,14 +309,14 @@
         <i class="ph ph-robot text-xl"></i>
         CMO Agent
     </h2>
-    <div class="card p-6 bg-[#020205] border border-brandAccentPurple/20 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="operation-card p-6 border-brandAccentPurple/20 flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
             <h3 class="text-lg font-bold text-white mb-1">Recomendação Estratégica</h3>
             <p class="text-sm text-brandMuted">Sugestões de formatos, temas e agenda para os próximos ciclos.</p>
         </div>
         <div class="flex gap-4">
-            <a href="/cmo/recommendations" class="btn-secondary whitespace-nowrap">Ver Histórico</a>
-            <button onclick="generateCmoRecommendation()" class="btn-primary flex items-center gap-2 whitespace-nowrap">
+            <a href="/cmo/recommendations" class="btn action-secondary whitespace-nowrap">Ver histórico</a>
+            <button type="button" onclick="generateCmoRecommendation(this)" class="btn action-primary flex items-center gap-2 whitespace-nowrap">
                 <i class="ph ph-sparkle"></i> Nova Recomendação
             </button>
         </div>

@@ -2,13 +2,14 @@
 
 {% block content %}
 <div class="space-y-8">
-    <div class="flex items-center justify-between mb-8">
+    <div class="workbench-hero mb-8">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight text-white mb-2">Memória Estratégica</h1>
-            <p class="text-brandSecondary">Acúmulo de inteligência baseada nos resultados reais das publicações.</p>
+            <div class="workbench-eyebrow">Etapa 06 · Aprendizado</div>
+            <h1>Memória Estratégica</h1>
+            <p>Acúmulo de inteligência baseada nos resultados reais das publicações.</p>
         </div>
         <div>
-            <button onclick="generateStrategicMemory()" class="btn-primary flex items-center gap-2">
+            <button onclick="generateStrategicMemory()" class="btn action-primary flex items-center gap-2">
                 <i class="ph ph-sparkle"></i> Gerar Memória Estratégica
             </button>
         </div>
@@ -22,7 +23,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for mem in memories %}
-        <div class="card p-6 bg-[#020205] border border-brandPrimary/20 relative overflow-hidden group">
+        <div class="operation-card p-6 bg-[#020205] relative overflow-hidden group">
             <div class="absolute -right-4 -bottom-4 text-brandPrimary/5 group-hover:scale-110 transition-transform">
                 <i class="ph ph-brain text-8xl"></i>
             </div>
@@ -50,13 +51,13 @@
                     </div>
                 </div>
                 
-                <a href="/strategic-memory/{{ mem.id }}" class="btn-secondary w-full text-center flex items-center justify-center gap-2">
+                <a href="/strategic-memory/{{ mem.id }}" class="btn action-secondary w-full text-center flex items-center justify-center gap-2">
                     <i class="ph ph-brain"></i> Ver Memória
                 </a>
             </div>
         </div>
         {% else %}
-        <div class="col-span-full card p-12 bg-[#020205] border border-brandBorder border-dashed text-center">
+        <div class="col-span-full operation-card p-12 bg-[#020205] border border-brandBorder border-dashed text-center">
             <div class="w-16 h-16 rounded-full bg-brandPrimary/10 flex items-center justify-center text-brandPrimary text-2xl mx-auto mb-4">
                 <i class="ph ph-brain"></i>
             </div>
@@ -64,7 +65,7 @@
             <p class="text-brandMuted max-w-md mx-auto mb-6">
                 A memória estratégica consolida os aprendizados editoriais de posts publicados nos últimos 30 dias para orientar o planejamento futuro.
             </p>
-            <button onclick="generateStrategicMemory()" class="btn-primary mx-auto flex items-center gap-2">
+            <button onclick="generateStrategicMemory()" class="btn action-primary mx-auto flex items-center gap-2">
                 <i class="ph ph-sparkle"></i> Gerar a primeira memória
             </button>
         </div>

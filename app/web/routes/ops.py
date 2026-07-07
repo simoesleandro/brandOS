@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter(tags=["ops"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/ops")
 async def ops_dashboard(request: Request):

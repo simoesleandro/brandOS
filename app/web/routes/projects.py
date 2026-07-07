@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/")
 async def get_projects(request: Request):

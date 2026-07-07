@@ -4,54 +4,39 @@
 
 {% block content %}
 
-<!-- Hero Command Center for Publications -->
-<div class="mb-10 hero-panel rounded-2xl p-8 md:p-10 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-8">
-    <div class="abstract-orbit w-[500px] h-[500px] -right-[150px] -top-[250px] pointer-events-none opacity-40"></div>
-    
-    <div class="relative z-10 max-w-3xl">
-        <div class="flex items-center gap-3 mb-3">
-            <span class="badge bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-brandAccentPurple animate-pulse"></span>
-                Publicações
-            </span>
-            <span class="text-xs font-mono text-brandMuted uppercase tracking-widest">/data/registry</span>
-        </div>
-        
-        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-2">
-            Gerações e <span class="text-transparent bg-clip-text bg-gradient-to-r from-brandAccentPurple to-brandAccent">Publicações</span>
-        </h1>
-        
-        <p class="text-brandSecondary text-sm md:text-base max-w-2xl leading-relaxed font-medium">
-            Histórico completo das semanas de conteúdo geradas pela inteligência artificial. Selecione uma publicação para inspecionar os ativos e coordenar o deploy.
-        </p>
+<div class="workbench-hero mb-8">
+    <div>
+        <div class="workbench-eyebrow">Etapa 03 · Registro editorial</div>
+        <h1>Publicações</h1>
+        <p>Histórico das semanas geradas, peças publicáveis e ativos vinculados. Entre em uma semana para revisar, copiar, publicar ou ajustar status.</p>
     </div>
-    
-    <div class="relative z-10">
-        <a href="/generate" class="btn btn-primary shadow-lg shadow-blue-500/20 px-6 py-3">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            GERAR NOVA SEMANA
+    <div class="flex flex-col sm:flex-row gap-3">
+        <a href="/calendar" class="btn action-secondary">Ver agenda</a>
+        <a href="/generate" class="btn action-primary">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Gerar semana
         </a>
     </div>
 </div>
 
 <div class="grid grid-cols-1 gap-6">
     {% if not weeks %}
-    <div class="cockpit-card p-16 text-center flex flex-col items-center justify-center">
+    <div class="operation-card p-12 text-center flex flex-col items-center justify-center">
         <div class="w-16 h-16 rounded-full border border-dashed border-brandBorder flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
         </div>
-        <p class="text-base text-brandMuted font-mono uppercase tracking-widest mb-4">Registry Vazio</p>
-        <a href="/generate" class="btn btn-ghost border-brandAccent/30 text-brandAccent hover:bg-brandAccent/10">INICIAR PRIMEIRA GERAÇÃO</a>
+        <p class="text-base text-brandMuted font-mono uppercase tracking-widest mb-4">Nenhuma semana registrada</p>
+        <a href="/generate" class="btn action-primary">Iniciar primeira geração</a>
     </div>
     {% else %}
         {% for w in weeks %}
-        <div class="cockpit-card p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center group border-l-2 border-transparent hover:border-l-brandAccentPurple hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 ease-out cursor-default">
+        <div class="operation-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group">
             <div class="flex-1 pr-6">
                 {% set display_theme = w.theme or w.title or 'Tema não informado' %}
                 {% set display_id = w.id or (w.date ~ '-semana-brandos') %}
                 
                 <div class="flex flex-wrap items-center gap-3 mb-3">
-                    <span class="text-[10px] font-mono text-brandAccent bg-brandAccent/10 px-2.5 py-1 rounded border border-brandAccent/20 uppercase font-bold tracking-widest">{{ w.project }}</span>
+                    <span class="workbench-eyebrow">{{ w.project }}</span>
                     <span class="text-xs font-mono text-brandMuted">ID: {{ display_id }}</span>
                 </div>
                 
@@ -77,9 +62,9 @@
                 </div>
             </div>
             
-            <div class="mt-6 md:mt-0 flex-shrink-0">
-                <a href="/publications/{{ display_id }}" class="btn btn-ghost border-brandAccentPurple/30 text-brandAccentPurple hover:bg-brandAccentPurple/10 px-8 py-3.5 flex items-center gap-3 w-full md:w-auto">
-                    INSPECIONAR
+            <div class="flex-shrink-0">
+                <a href="/publications/{{ display_id }}" class="btn action-secondary w-full md:w-auto">
+                    Inspecionar
                     <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </a>
             </div>
@@ -102,7 +87,7 @@
                 {% for w in technical_weeks %}
                 {% set display_theme = w.theme or w.title or 'Tema não informado' %}
                 {% set display_id = w.id or (w.date ~ '-semana-brandos') %}
-                <div class="cockpit-card p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div class="operation-list-item flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                     <div>
                         <div class="flex flex-wrap items-center gap-2 mb-2">
                             <span class="text-[10px] font-mono text-brandMuted bg-brandBg px-2 py-0.5 rounded border border-brandBorder uppercase tracking-widest">{{ w.project }}</span>

@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 from dotenv import load_dotenv
 import os
 
 router = APIRouter(prefix="/settings", tags=["settings"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/")
 async def get_settings(request: Request):

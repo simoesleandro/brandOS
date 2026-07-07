@@ -15,10 +15,12 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Cabeçalho -->
-    <div class="flex items-center justify-between">
+    <div class="workbench-hero p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div>
+            <p class="workbench-eyebrow mb-2">Etapa 03 · Revisão da semana</p>
             <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-2xl font-black tracking-tight text-white uppercase font-mono">SEMANA GERADA</h1>
+                <h1 class="text-3xl font-bold tracking-tight text-white">Semana gerada</h1>
                 <span class="badge 
                     {% if week.general_status == 'approved' %}badge-approved
                     {% elif week.general_status == 'partially_approved' %}badge-edited
@@ -26,7 +28,7 @@
                     {{ week.general_status | upper }}
                 </span>
             </div>
-            <p class="text-sm text-brandMuted">
+            <p class="text-sm text-brandMuted max-w-3xl">
                 Pasta: <span class="font-mono text-brandSecondary">{{ week.folder_name }}</span> | 
                 Início Planejado: <span class="font-mono">{{ week.planned_week_start }}</span> |
                 Briefing: <span class="font-mono text-brandAccentPurple">{{ week.briefing_source }}</span>
@@ -34,10 +36,11 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <a href="/calendar" class="btn-secondary px-4 py-2">Voltar à Agenda</a>
-            <button id="btn-approve-week" onclick="approveWeek('{{ week.folder_name }}')" class="btn-primary px-5 py-2 font-bold" {% if week.general_status == 'approved' %}disabled{% endif %}>
-                Aprovar Semana Inteira
+            <a href="/calendar" class="btn action-secondary px-4 py-2">Voltar à agenda</a>
+            <button id="btn-approve-week" onclick="approveWeek('{{ week.folder_name }}')" class="btn action-primary px-5 py-2 font-bold" {% if week.general_status == 'approved' %}disabled{% endif %}>
+                Aprovar semana
             </button>
+        </div>
         </div>
     </div>
 
@@ -66,7 +69,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             {% for day in ['segunda', 'quarta', 'sexta'] %}
             {% set post = week.posts[day] %}
-            <div class="cockpit-card flex flex-col h-full bg-[#020205] border border-brandBorder overflow-hidden group">
+            <div class="operation-card flex flex-col h-full overflow-hidden group">
                 <div class="p-4 border-b border-brandBorder/50 flex items-center justify-between bg-brandSidebar/30">
                     <div class="flex items-center gap-3">
                         <span class="text-sm font-bold uppercase tracking-wider text-brandSecondary">{{ day }}</span>
@@ -105,22 +108,22 @@
                     
                     <div class="flex flex-col items-end gap-2">
                         <div class="flex items-center gap-2">
-                            <button onclick="editPost('{{ post.item_id }}', '{{ day }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                            <button onclick="editPost('{{ post.item_id }}', '{{ day }}')" class="btn action-secondary px-3 py-1.5 text-xs">
                                 Salvar Edição
                             </button>
-                            <button onclick="approvePost('{{ week.folder_name }}', '{{ day }}')" class="btn-primary px-3 py-1.5 text-xs" {% if post.status == 'approved' or post.status == 'scheduled' %}disabled{% endif %}>
+                            <button onclick="approvePost('{{ week.folder_name }}', '{{ day }}')" class="btn action-primary px-3 py-1.5 text-xs" {% if post.status == 'approved' or post.status == 'scheduled' %}disabled{% endif %}>
                                 Aprovar
                             </button>
                         </div>
                         
                         <div class="pt-2 border-t border-brandBorder/50 w-full flex flex-col items-end gap-2 mt-1">
                             {% if post.status == 'approved' %}
-                                <button onclick="openScheduleModal('{{ post.item_id }}')" class="btn-primary bg-brandAccentPurple hover:bg-brandAccentPurple/80 px-3 py-1.5 text-xs">
+                                <button onclick="openScheduleModal('{{ post.item_id }}')" class="btn action-primary px-3 py-1.5 text-xs">
                                     Agendar
                                 </button>
                             {% elif post.status == 'scheduled' %}
                                 <div class="flex items-center gap-2">
-                                    <button onclick="openScheduleModal('{{ post.item_id }}', true)" class="btn-secondary px-3 py-1.5 text-xs">
+                                    <button onclick="openScheduleModal('{{ post.item_id }}', true)" class="btn action-secondary px-3 py-1.5 text-xs">
                                         Reagendar
                                     </button>
                                     <button onclick="unschedulePost('{{ post.item_id }}')" class="btn-ghost text-red-400 hover:text-red-300 px-3 py-1.5 text-xs border border-red-500/30">

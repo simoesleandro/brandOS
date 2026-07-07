@@ -21,6 +21,13 @@
   --status-green: #22C55E;
   --status-amber: #FACC15;
   --status-red: #F87171;
+  --surface-quiet: rgba(10, 12, 24, 0.72);
+  --surface-raised: rgba(18, 22, 38, 0.82);
+  --line-soft: rgba(148, 163, 184, 0.16);
+  --signal-action: #38BDF8;
+  --signal-create: #A78BFA;
+  --signal-publish: #34D399;
+  --signal-learn: #FBBF24;
 }
 
 body {
@@ -63,6 +70,164 @@ body {
   background-color: var(--card-highlight);
   border-color: rgba(148, 163, 184, 0.2);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* BrandOS Operating UI */
+.workbench-hero {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(3, 7, 18, 0.94)),
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 36%);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+}
+
+.workbench-eyebrow {
+  color: var(--signal-action);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.section-heading h2,
+.section-heading h1 {
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.section-heading p {
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-size: 0.88rem;
+}
+
+.runway {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.runway-step {
+  min-height: 74px;
+  padding: 0.8rem;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface-quiet);
+  position: relative;
+}
+
+.runway-step::after {
+  content: '';
+  position: absolute;
+  right: -0.55rem;
+  top: 50%;
+  width: 0.55rem;
+  height: 1px;
+  background: var(--line-soft);
+}
+
+.runway-step:last-child::after {
+  display: none;
+}
+
+.runway-step.is-current {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(14, 116, 144, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.runway-label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.45rem;
+}
+
+.runway-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.operation-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.28);
+}
+
+.operation-list-item {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.42);
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+
+.operation-list-item:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(15, 23, 42, 0.72);
+  transform: translateY(-1px);
+}
+
+.action-primary {
+  background: var(--signal-action);
+  color: #020617;
+  border: 1px solid rgba(186, 230, 253, 0.45);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.16);
+}
+
+.action-primary:hover {
+  background: #7DD3FC;
+  transform: translateY(-1px);
+}
+
+.action-secondary {
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--text-secondary);
+  border: 1px solid var(--line-soft);
+}
+
+.action-secondary:hover {
+  color: var(--text-primary);
+  border-color: rgba(148, 163, 184, 0.32);
+}
+
+@media (max-width: 1024px) {
+  .runway {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .runway-step::after {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .runway {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 /* Metric Card Variants */

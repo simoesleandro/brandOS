@@ -3,49 +3,52 @@
 {% block title %}Configurações | BrandOS Console{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <h1 class="text-3xl font-bold tracking-tight">Configurações</h1>
-    <p class="text-vercelMuted mt-2">Visão geral do ambiente do BrandOS local.</p>
+<div class="workbench-hero mb-8">
+    <div>
+        <div class="workbench-eyebrow">Operação local</div>
+        <h1>Configurações</h1>
+        <p>Visão geral do ambiente local, modelo de IA e diretórios usados pelo BrandOS.</p>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="card p-6 rounded-lg">
-        <h2 class="text-xl font-bold mb-4 border-b border-vercelBorder pb-2">Ambiente & APIs</h2>
+    <div class="operation-card p-6">
+        <h2 class="text-xl font-bold mb-4 border-b border-brandBorder pb-2">Ambiente & APIs</h2>
         
         <div class="space-y-4">
             <div>
-                <span class="block text-sm text-vercelMuted">GEMINI_API_KEY</span>
-                <span class="font-mono text-white text-sm bg-vercelBorder px-2 py-1 rounded">
+                <span class="block text-sm text-brandMuted">GEMINI_API_KEY</span>
+                <span class="font-mono text-white text-sm bg-brandBorder px-2 py-1 rounded">
                     {{ api_key_status }}
                 </span>
             </div>
             
             <div>
-                <span class="block text-sm text-vercelMuted">BRANDOS_MODEL</span>
-                <span class="font-mono text-white text-sm bg-vercelBorder px-2 py-1 rounded">
+                <span class="block text-sm text-brandMuted">BRANDOS_MODEL</span>
+                <span class="font-mono text-white text-sm bg-brandBorder px-2 py-1 rounded">
                     {{ model_name }}
                 </span>
             </div>
         </div>
     </div>
 
-    <div class="card p-6 rounded-lg">
-        <h2 class="text-xl font-bold mb-4 border-b border-vercelBorder pb-2">Diretórios Locais</h2>
+    <div class="operation-card p-6">
+        <h2 class="text-xl font-bold mb-4 border-b border-brandBorder pb-2">Diretórios Locais</h2>
         
         <div class="space-y-4 text-sm font-mono text-white">
             <div>
-                <span class="block text-xs font-sans text-vercelMuted mb-1">Knowledge Base</span>
-                <div class="bg-black border border-vercelBorder p-2 rounded break-all">{{ knowledge_dir }}</div>
+                <span class="block text-xs font-sans text-brandMuted mb-1">Knowledge Base</span>
+                <div class="bg-black border border-brandBorder p-2 rounded break-all">{{ knowledge_dir }}</div>
             </div>
             
             <div>
-                <span class="block text-xs font-sans text-vercelMuted mb-1">Registry</span>
-                <div class="bg-black border border-vercelBorder p-2 rounded break-all">{{ registry_dir }}</div>
+                <span class="block text-xs font-sans text-brandMuted mb-1">Registry</span>
+                <div class="bg-black border border-brandBorder p-2 rounded break-all">{{ registry_dir }}</div>
             </div>
             
             <div>
-                <span class="block text-xs font-sans text-vercelMuted mb-1">Outputs (Generated)</span>
-                <div class="bg-black border border-vercelBorder p-2 rounded break-all">{{ generated_dir }}</div>
+                <span class="block text-xs font-sans text-brandMuted mb-1">Outputs (Generated)</span>
+                <div class="bg-black border border-brandBorder p-2 rounded break-all">{{ generated_dir }}</div>
             </div>
         </div>
     </div>

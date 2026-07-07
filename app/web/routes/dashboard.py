@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Request
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter()
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/")
 async def get_dashboard(request: Request):
     metrics = service.get_dashboard_metrics()
+    operating_loop = service.get_today_operating_loop()
     
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "metrics": metrics
+        "metrics": metrics,
+        "operating_loop": operating_loop,
     })

@@ -3,28 +3,26 @@
 {% block title %}Erro | BrandOS Console{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-    <a href="javascript:history.back()" class="text-vercelAccent text-sm hover:text-blue-400 mb-4 inline-flex items-center gap-1 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Voltar
-    </a>
-    
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-red-500">Ops, algo deu errado</h1>
-            <p class="text-vercelMuted mt-1">Houve um problema ao tentar carregar o que você pediu.</p>
-        </div>
+<div class="workbench-hero mb-8">
+    <div>
+        <a href="javascript:history.back()" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Voltar
+        </a>
+        <div class="workbench-eyebrow">Estado de falha</div>
+        <h1 class="text-red-500">Algo deu errado</h1>
+        <p>Houve um problema ao tentar carregar o que você pediu.</p>
     </div>
 </div>
 
-<div class="card p-8 border-red-500/30 bg-red-500/5 flex items-start gap-4">
+<div class="operation-card p-8 border-red-500/30 bg-red-500/5 flex items-start gap-4">
     <svg class="w-8 h-8 text-red-400 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
     <div>
         <h3 class="text-lg font-semibold text-white mb-2">Detalhe do erro</h3>
         <p class="text-red-300">{{ message | default("Erro desconhecido.") }}</p>
         <div class="mt-6">
-            <a href="/" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded text-sm transition-colors">
-                Ir para o Dashboard
+            <a href="/" class="btn action-secondary">
+                Ir para o dashboard
             </a>
         </div>
     </div>

@@ -3,7 +3,13 @@ import json
 import pytest
 from app.core.brandos_service import BrandOSService
 from app.core.services.asset_service import AssetService
+from app.core.services.briefing_service import BriefingService
 from app.core.services.calendar_service import CalendarService
+from app.core.services.cmo_service import CmoService
+from app.core.services.learning_service import LearningService
+from app.core.services.ops_service import OpsService
+from app.core.services.operating_loop_service import OperatingLoopService
+from app.core.services.publication_service import PublicationService
 from app.core.repositories.history_repository import HistoryRepository
 
 def setup_mock_env(base_dir):
@@ -106,3 +112,38 @@ def asset_service(mock_env):
 def calendar_service(mock_env):
     history_repo = HistoryRepository(base_dir=mock_env)
     return CalendarService(history_repo=history_repo, llm_client=None)
+
+@pytest.fixture
+def publication_service(mock_env):
+    history_repo = HistoryRepository(base_dir=mock_env)
+    return PublicationService(base_dir=mock_env, history_repo=history_repo)
+
+@pytest.fixture
+def briefing_service(mock_env):
+    return BriefingService(base_dir=mock_env)
+
+@pytest.fixture
+def cmo_service(mock_env):
+    return CmoService(base_dir=mock_env)
+
+@pytest.fixture
+def ops_service(mock_env):
+    history_repo = HistoryRepository(base_dir=mock_env)
+    return OpsService(history_repo=history_repo)
+
+@pytest.fixture
+def learning_service(mock_env):
+    history_repo = HistoryRepository(base_dir=mock_env)
+    return LearningService(base_dir=mock_env, history_repo=history_repo, llm_client=None)
+
+@pytest.fixture
+def operating_loop_service(mock_env):
+    history_repo = HistoryRepository(base_dir=mock_env)
+    briefing_service = BriefingService(base_dir=mock_env)
+    cmo_service = CmoService(base_dir=mock_env)
+    return OperatingLoopService(
+        base_dir=mock_env,
+        history_repo=history_repo,
+        briefing_service=briefing_service,
+        cmo_service=cmo_service,
+    )

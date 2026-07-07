@@ -3,11 +3,11 @@ from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi import HTTPException
 from pathlib import Path
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 
 router = APIRouter(prefix="/publications", tags=["publications"])
-service = BrandOSService()
+service = get_brandos_service()
 
 @router.get("/")
 async def list_publications(request: Request):

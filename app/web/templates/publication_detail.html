@@ -3,27 +3,24 @@
 {% block title %}Detalhe: {{ folder_id }} | BrandOS Command Center{% endblock %}
 
 {% block content %}
-<!-- Hero Command Center for Publication Detail -->
-<div class="mb-10 hero-panel rounded-2xl p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-    <div class="abstract-orbit w-[400px] h-[400px] -right-[100px] -top-[150px] pointer-events-none opacity-30"></div>
-    <div class="relative z-10">
-        <a href="/publications" class="text-brandAccent text-xs hover:text-brandAccentCyan mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+<div class="workbench-hero mb-8">
+    <div>
+        <a href="/publications" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            VOLTAR PARA REGISTRY
+            Voltar para publicações
         </a>
-        <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">
-            Semana <span class="text-transparent bg-clip-text bg-gradient-to-r from-brandAccentPurple to-brandAccent">{{ details.date }}</span> — {{ details.project }}
-        </h1>
-        <p class="text-brandSecondary font-medium text-sm">Tema: <span class="text-white">{{ details.theme }}</span></p>
+        <div class="workbench-eyebrow">Etapa 03 · Revisão da semana</div>
+        <h1>Semana {{ details.date }}</h1>
+        <p><span class="text-white">{{ details.project }}</span> · {{ details.theme }}</p>
     </div>
-    <div class="relative z-10 flex flex-col items-end gap-2">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <span class="text-[10px] text-brandMuted font-mono uppercase tracking-widest">Status Geral</span>
         <span class="badge badge-{{ details.status }} px-4 py-2 shadow-lg shadow-white/5">{{ details.status | translate_status }}</span>
     </div>
 </div>
 
 {% if not details %}
-<div class="cockpit-card p-16 text-center text-status-red flex flex-col items-center">
+<div class="operation-card p-16 text-center text-status-red flex flex-col items-center">
     <svg class="w-12 h-12 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
     <p class="font-mono uppercase tracking-widest text-sm">Registro Corrompido ou Inexistente</p>
     <p class="text-xs text-brandMuted mt-2">A pasta solicitada não foi encontrada no file system.</p>
@@ -46,39 +43,39 @@
     {% set count_pend = total_main - count_pub - count_discarded %}
     {% set count_aux = aux_items | length %}
     
-    <div class="cockpit-card metric-card metric-blue p-5 group">
+    <div class="operation-card metric-card metric-blue p-5 group">
         <svg class="metric-icon-bg text-brandAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
         <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono font-bold mb-2 z-10">PUBLICÁVEIS</p>
         <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ total_main }}</p>
     </div>
     
-    <div class="cockpit-card metric-card metric-green p-5 group">
+    <div class="operation-card metric-card metric-green p-5 group">
         <svg class="metric-icon-bg text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
         <p class="text-[10px] text-green-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">PUBLICADAS</p>
         <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_pub }}</p>
     </div>
 
-    <div class="cockpit-card metric-card metric-amber p-5 group">
+    <div class="operation-card metric-card metric-amber p-5 group">
         <svg class="metric-icon-bg text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         <p class="text-[10px] text-yellow-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">PENDENTES</p>
         <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_pend }}</p>
     </div>
     
-    <div class="cockpit-card metric-card metric-red p-5 group relative overflow-hidden">
+    <div class="operation-card metric-card metric-red p-5 group relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <svg class="metric-icon-bg text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
         <p class="text-[10px] text-red-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">DESCARTADAS</p>
         <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_discarded }}</p>
     </div>
     
-    <div class="cockpit-card metric-card metric-cyan p-5 group relative overflow-hidden">
+    <div class="operation-card metric-card metric-cyan p-5 group relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <svg class="metric-icon-bg text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         <p class="text-[10px] text-cyan-500/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">AGENDADAS</p>
         <p class="text-4xl font-black text-white z-10 tracking-tighter">{{ count_scheduled }}</p>
     </div>
     
-    <div class="cockpit-card metric-card metric-purple p-5 group relative overflow-hidden">
+    <div class="operation-card metric-card metric-purple p-5 group relative overflow-hidden">
         <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
         <svg class="metric-icon-bg text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
         <p class="text-[10px] text-brandAccentPurple/60 uppercase tracking-widest font-mono font-bold mb-2 z-10">ASSETS VINCULADOS</p>
@@ -86,8 +83,13 @@
     </div>
 </div>
 
-<h2 class="text-lg font-bold text-white mb-4 tracking-tight">Ativos da Publicação</h2>
-<div class="cockpit-card overflow-hidden border-t-2 border-t-brandAccentPurple/50">
+<div class="section-heading mb-4">
+    <div>
+        <span>Inventário da semana</span>
+        <h2>Ativos da publicação</h2>
+    </div>
+</div>
+<div class="operation-card overflow-hidden">
     <div class="table-container overflow-x-auto">
         <table class="w-full text-left text-sm whitespace-nowrap">
             <thead class="bg-brandBg/80 border-b border-brandBorder/50">
@@ -154,11 +156,11 @@
                                 {% endif %}
                             {% endif %}
                             
-                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn btn-primary px-3 py-1.5 text-[10px]">
+                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn action-primary px-3 py-1.5 text-[10px]">
                                 VER PEÇA
                             </a>
                         {% else %}
-                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn btn-primary px-3 py-1.5 text-[10px]">
+                            <a href="/publications/{{ folder_id }}/item/{{ item.id }}" class="btn action-primary px-3 py-1.5 text-[10px]">
                                 VER ASSET
                             </a>
                         {% endif %}
@@ -178,7 +180,7 @@
         <h3 class="text-sm font-semibold text-brandMuted uppercase tracking-widest font-mono">ARQUIVOS PERDIDOS / NÃO LOCALIZADOS</h3>
     </div>
     
-    <div class="cockpit-card overflow-hidden opacity-60">
+    <div class="operation-card overflow-hidden opacity-60">
         <table class="w-full text-left border-collapse">
             <thead class="bg-brandBg border-b border-brandBorder/30">
                 <tr>

@@ -22,7 +22,8 @@ def test_get_editorial_calendar(brandos_service):
 def test_get_dashboard_metrics(brandos_service):
     metrics = brandos_service.get_dashboard_metrics()
     assert metrics["total_weeks"] == 2
-    assert metrics["total_items"] == 3  # post-segunda, post-quarta, carrossel
+    # total_items counts only main publishable pieces; linked carousels are tracked separately.
+    assert metrics["total_items"] == 2  # post-segunda, post-quarta
     assert metrics["published_items"] == 1 # post-segunda
     assert metrics["pending_items"] == 1 # post-quarta (draft)
     assert metrics["linked_assets_items"] == 1 # carrossel

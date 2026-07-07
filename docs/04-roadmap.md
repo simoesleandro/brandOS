@@ -540,21 +540,48 @@ Gerando:
 
 Toda nova ideia deve ser classificada em uma destas categorias:
 
-## Agora
+## Now
 
-Essencial para o MVP.
+Melhora diretamente o loop operacional: decidir o que publicar, revisar, gerar, medir ou aprender hoje.
 
-## Depois
+Exemplos atuais:
+
+* Próxima ação diária no dashboard.
+* Lembretes de métricas 24h, 48h e 7d.
+* Fluxo CMO → briefing → semana gerada.
+* Assistente de publicação manual.
+
+## Next
+
+Melhora qualidade ou reduz trabalho manual sem mudar o produto central.
+
+Exemplos:
+
+* Score editorial antes da publicação.
+* Exportar bundle de publicação com post, primeiro comentário, links e checklist.
+* Importador de contexto a partir de README/changelog local.
+
+## Later
 
 Importante, mas não bloqueia a primeira versão.
 
-## Futuro
+Exemplos:
 
-Boa ideia, mas ainda distante.
+* Modo campanha de 30 dias.
+* Relatórios mensais.
+* Integração com GitHub.
+* Carrossel avançado.
 
-## Não fazer
+## No
 
-Ideia que aumenta complexidade sem gerar valor claro.
+Ideia que aumenta complexidade sem melhorar publicação, reputação, portfólio ou networking.
+
+Exemplos:
+
+* Publicação automática no LinkedIn antes do fluxo manual estar excelente.
+* Dashboard analítico amplo sem dados suficientes.
+* Multiusuário/login antes de o uso pessoal estar sólido.
+* Integrações externas que substituem revisão humana.
 
 A pergunta principal será sempre:
 

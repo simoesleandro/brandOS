@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request, HTTPException
-from app.core.brandos_service import BrandOSService
+from app.web.dependencies import get_brandos_service
 from app.web.templates_env import templates
 from pydantic import BaseModel
 from typing import Optional
 
 router = APIRouter(tags=["publishing"])
-service = BrandOSService()
+service = get_brandos_service()
 
 class PublishReadyRequest(BaseModel):
     confirm: bool

@@ -4,39 +4,39 @@
 {% block content %}
 <div class="max-w-6xl mx-auto w-full pb-20 relative h-full flex flex-col">
     
-    <div class="flex items-center justify-between mb-8 flex-shrink-0">
-        <div class="flex items-center gap-4">
-            <a href="/briefings" class="p-2 bg-brandSidebar border border-brandBorder rounded-lg text-brandMuted hover:text-white hover:border-brandAccentPurple/50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+    <div class="workbench-hero mb-8 flex-shrink-0">
+        <div>
+            <a href="/briefings" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Voltar para briefings
             </a>
-            <div>
-                <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                    <svg class="w-8 h-8 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Detalhes do Briefing
-                </h1>
-                <p class="text-brandMuted mt-1">{{ filename }}</p>
-            </div>
+            <div class="workbench-eyebrow">Etapa 02 · Briefing aprovado</div>
+            <h1>Detalhes do Briefing</h1>
+            <p>{{ filename }}</p>
         </div>
         
-        <div class="flex items-center gap-3">
-            <button onclick="copyBriefingContent()" class="btn-secondary flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-start md:justify-end gap-3">
+            <button onclick="copyBriefingContent()" class="btn action-secondary flex items-center gap-2">
                 <i class="ph ph-copy"></i> Copiar Briefing
             </button>
             
             {% if status in ['draft', 'reviewed', 'approved', 'briefing_aprovado'] %}
-            <a href="/briefings/{{ filename }}/edit" class="btn-secondary flex items-center gap-2">
+            <a href="/briefings/{{ filename }}/edit" class="btn action-secondary flex items-center gap-2">
                 <i class="ph ph-pencil-simple"></i> Editar
             </a>
             {% endif %}
             
             {% if status in ['draft', 'reviewed'] %}
-            <button onclick="approveBriefingDetail('{{ filename }}')" class="btn-secondary text-green-400 border-green-500/30 hover:bg-green-500/10 flex items-center gap-2">
+            <button onclick="archiveBriefing('{{ filename }}')" class="btn action-secondary text-red-400 border-red-500/30 hover:bg-red-500/10 flex items-center gap-2" title="Arquivar briefing">
+                <i class="ph ph-archive"></i> Arquivar
+            </button>
+            <button onclick="approveBriefingDetail('{{ filename }}')" class="btn action-secondary text-green-400 border-green-500/30 hover:bg-green-500/10 flex items-center gap-2">
                 <i class="ph ph-check-circle"></i> Aprovar
             </button>
             {% endif %}
             
             {% if status in ['approved', 'briefing_aprovado'] %}
-            <button onclick="openGenerateModal()" class="flex items-center gap-2 bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-[0_0_15px_rgba(139,92,246,0.2)] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)]">
+            <button onclick="openGenerateModal()" class="btn action-primary flex items-center gap-2">
                 <i class="ph ph-magic-wand"></i> Gerar Semana
             </button>
             {% endif %}
@@ -45,11 +45,22 @@
             <div class="px-4 py-2 bg-brandAccentPurple/20 text-brandAccentPurple rounded-lg border border-brandAccentPurple/30 flex items-center gap-2">
                 <i class="ph ph-check-circle"></i> Semana Gerada
             </div>
+            {% if generated_folder %}
+            <a href="/generated-weeks/{{ generated_folder }}" class="btn action-primary flex items-center gap-2">
+                <i class="ph ph-folder"></i> Ver semana gerada
+            </a>
+            {% endif %}
+            {% endif %}
+            
+            {% if status == 'archived' %}
+            <div class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg border border-red-500/30 flex items-center gap-2">
+                <i class="ph ph-archive"></i> Arquivado
+            </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="bg-brandSidebar border border-brandBorder rounded-xl p-8 flex-1 overflow-y-auto">
+    <div class="operation-card p-8 flex-1 overflow-y-auto">
         <div class="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-500 text-sm flex gap-3">
             <i class="ph ph-warning-circle text-lg flex-shrink-0"></i>
             <div>A geração da semana só acontece após confirmação humana. Nenhum post será publicado automaticamente.</div>
@@ -110,10 +121,10 @@
                     </div>
         
         <div class="p-6 border-t border-brandBorder/50 flex justify-end gap-3 bg-brandSidebar/30">
-            <button onclick="closeGenerateModal()" class="btn-secondary px-5 py-2.5">
+            <button onclick="closeGenerateModal()" class="btn action-secondary">
                 Cancelar
             </button>
-            <button id="btn-generate" onclick="generateWeek()" class="bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white px-6 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <button id="btn-generate" onclick="generateWeek()" class="btn action-primary flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <span>Gerar Semana</span>
             </button>

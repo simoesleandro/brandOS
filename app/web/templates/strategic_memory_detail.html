@@ -3,20 +3,18 @@
 {% block content %}
 <div class="space-y-8 max-w-4xl mx-auto pb-12">
     
-    <div class="flex items-center gap-4 mb-6">
-        <a href="/strategic-memory" class="btn-ghost p-2 text-brandMuted hover:text-white">
-            <i class="ph ph-arrow-left text-xl"></i>
-        </a>
+    <div class="workbench-hero mb-8">
         <div>
+            <a href="/strategic-memory" class="text-brandSecondary text-xs hover:text-white mb-4 inline-flex items-center gap-1.5 transition-colors font-mono tracking-widest uppercase">
+                <i class="ph ph-arrow-left"></i> Voltar para memória
+            </a>
             <div class="flex items-center gap-2 mb-1">
-                <span class="badge bg-brandPrimary/30 text-brandPrimary text-xs uppercase tracking-widest font-mono">
-                    Memória Estratégica
-                </span>
+                <span class="workbench-eyebrow">Etapa 06 · Aprendizado</span>
                 <span class="text-xs text-brandMuted font-mono">
                     {{ memory.id }}
                 </span>
             </div>
-            <h1 class="text-2xl font-bold text-white">Resultados dos Últimos {{ memory.window_days }} dias</h1>
+            <h1>Resultados dos Últimos {{ memory.window_days }} dias</h1>
         </div>
     </div>
     
@@ -27,27 +25,27 @@
     {% else %}
     
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="card p-4 bg-[#020205] border border-brandBorder">
+        <div class="operation-card p-4 bg-[#020205]">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Gerada em</p>
             <p class="text-lg font-bold text-white font-mono">{{ memory.generated_at[:10] }}</p>
         </div>
-        <div class="card p-4 bg-[#020205] border border-brandBorder">
+        <div class="operation-card p-4 bg-[#020205]">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Posts Analisados</p>
             <p class="text-lg font-bold text-white font-mono">{{ memory.source_posts_count }}</p>
         </div>
-        <div class="card p-4 bg-[#020205] border border-brandBorder">
+        <div class="operation-card p-4 bg-[#020205]">
             <p class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mb-1">Aprendizados Fontes</p>
             <p class="text-lg font-bold text-brandAccentCyan font-mono">{{ memory.source_learning_count }}</p>
         </div>
-        <div class="card p-4 bg-[#020205] border border-brandBorder flex items-center justify-center">
-            <button onclick="generateStrategicMemory()" class="btn-secondary w-full text-xs flex items-center justify-center gap-2">
+        <div class="operation-card p-4 bg-[#020205] flex items-center justify-center">
+            <button onclick="generateStrategicMemory()" class="btn action-secondary w-full text-xs flex items-center justify-center gap-2">
                 <i class="ph ph-arrows-clockwise"></i> Gerar Nova
             </button>
         </div>
     </div>
 
     <!-- Conteúdo da Memória -->
-    <div class="card p-8 bg-[#020205] border border-brandBorder relative">
+    <div class="operation-card p-8 bg-[#020205] relative">
         <div class="absolute -right-4 top-4 text-brandPrimary/5">
             <i class="ph ph-brain text-8xl"></i>
         </div>

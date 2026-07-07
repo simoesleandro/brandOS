@@ -3,33 +3,32 @@
 {% block title %}Asset: {{ item.title }} | BrandOS Command Center{% endblock %}
 
 {% block content %}
-<!-- Hero Command Center for Item Detail -->
-<div class="mb-8 hero-panel rounded-2xl p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-    <div class="abstract-orbit w-[300px] h-[300px] -right-[50px] -top-[100px] pointer-events-none opacity-20"></div>
-    <div class="relative z-10 w-full flex flex-col gap-4">
+<div class="workbench-hero mb-8">
+    <div class="w-full flex flex-col gap-4">
         <div class="flex items-center gap-3 text-xs font-mono tracking-widest uppercase">
             <a href="/publications" class="text-brandMuted hover:text-brandAccentCyan transition-colors inline-flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                Registry
+                Publicações
             </a>
             <span class="text-brandBorderActive">/</span>
             <a href="/publications/{{ folder_id }}" class="text-brandMuted hover:text-brandAccentCyan transition-colors">
                 Semana {{ week_details.date }}
             </a>
             <span class="text-brandBorderActive">/</span>
-            <span class="text-brandAccentPurple">{{ item.type }}</span>
+            <span class="text-brandAccentPurple">{{ item.type | replace("_", " ") }}</span>
         </div>
         
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mt-2">
             <div>
-                <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2">{{ item.title }}</h1>
+                <div class="workbench-eyebrow">Etapa 04 · Peça editorial</div>
+                <h1>{{ item.title }}</h1>
                 <div class="flex items-center gap-3">
                     <span class="badge bg-brandAccent/10 text-brandAccent border border-brandAccent/30">{{ week_details.project }}</span>
                     <span class="text-brandMuted font-mono text-xs">{{ item.file }}</span>
                 </div>
             </div>
             <div class="flex flex-col items-end gap-2">
-                <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono">STATUS DO ATIVO</span>
+                <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono">Status da peça</span>
                 <span class="badge badge-{{ item.status }} px-4 py-2 shadow-lg shadow-white/5">{{ item.status | translate_status }}</span>
             </div>
         </div>
@@ -40,33 +39,33 @@
 <div class="mb-8 flex overflow-x-auto no-scrollbar gap-2">
     <button onclick="switchTab('conteudo')" class="tab-btn active px-5 py-2.5 rounded-t-lg bg-brandAccentPurple/10 border-b-2 border-brandAccentPurple text-white font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-        RAW DATA
+        Conteúdo
     </button>
     <button onclick="switchTab('assets')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        ASSETS VISUAIS
+        Assets
     </button>
     <button onclick="switchTab('publicacao')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-        PUBLICAÇÃO
+        Publicação
     </button>
     <button onclick="switchTab('metricas')" class="tab-btn px-5 py-2.5 rounded-t-lg bg-transparent border-b-2 border-transparent text-brandMuted hover:text-white hover:bg-white/5 font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-        TELEMETRIA
+        Métricas
     </button>
 </div>
 
 <!-- TAB: CONTEUDO -->
 <div id="tab-conteudo" class="tab-content block">
-    <div class="cockpit-card p-4 mb-6 flex flex-wrap gap-3 items-center">
-        <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mr-2">Painel de Ações:</span>
+    <div class="operation-card p-4 mb-6 flex flex-wrap gap-3 items-center">
+        <span class="text-[10px] text-brandMuted uppercase tracking-widest font-mono mr-2">Ações da peça:</span>
         
         <!-- Copiar -->
         <div id="raw-content" class="hidden">{{ item.content }}</div>
         {% if item.file_exists %}
         <button onclick="copyToClipboard('raw-content')" class="btn btn-ghost border-brandBorder/30 text-brandMuted hover:text-white hover:border-white/30 px-4 py-2">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-            COPIAR PAYLOAD
+            Copiar conteúdo
         </button>
         {% else %}
     <button class="btn btn-ghost border-brandBorder/30 text-brandMuted px-4 py-2 opacity-50 cursor-not-allowed" disabled>
@@ -76,9 +75,9 @@
     </div>
 
     <!-- Conteúdo da Peça -->
-    <div class="cockpit-card overflow-hidden">
+    <div class="operation-card overflow-hidden">
         <div class="bg-black/40 p-4 border-b border-brandBorder/30">
-            <h3 class="text-sm font-semibold text-white">Conteúdo do Arquivo</h3>
+            <h3 class="text-sm font-semibold text-white">Conteúdo da peça</h3>
         </div>
         <div class="p-6 overflow-y-auto max-h-[70vh]">
             {% if item.content == "Arquivo não encontrado no disco." %}
@@ -93,15 +92,15 @@
 <!-- TAB: ASSETS -->
 <div id="tab-assets" class="tab-content hidden">
     {% if not item.manifest %}
-    <div class="cockpit-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
+    <div class="operation-card p-16 text-center border-dashed border-brandBorder flex flex-col items-center">
         <div class="w-16 h-16 rounded-full border border-brandBorder flex items-center justify-center mb-6 shadow-inner">
             <svg class="w-6 h-6 text-brandMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         </div>
-        <h3 class="text-xl font-bold text-white mb-3">Asset Manager Inativo</h3>
+        <h3 class="text-xl font-bold text-white mb-3">Assets ainda não iniciados</h3>
         <p class="text-brandSecondary mb-8 text-sm max-w-md mx-auto">Não há um namespace alocado para recursos visuais desta peça.</p>
         <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/init" method="POST">
-            <button type="submit" class="btn btn-primary px-8 py-3.5 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
-                INICIALIZAR STORAGE VISUAL
+            <button type="submit" class="btn action-primary px-8 py-3.5">
+                Inicializar assets visuais
             </button>
         </form>
     </div>
@@ -109,13 +108,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Esquerda: Painel de Upload -->
         <div class="lg:col-span-1 space-y-6">
-            <div class="cockpit-card p-6 relative overflow-hidden group">
+            <div class="operation-card p-6 relative overflow-hidden group">
                 <div class="absolute -top-10 -right-10 w-32 h-32 bg-brandAccent/5 rounded-full -z-10 transition-transform duration-500"></div>
                 
-                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">Upload Engine</h3>
+                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">Enviar asset</h3>
                 <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/upload" method="POST" enctype="multipart/form-data" class="space-y-5">
                     <div>
-                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Data Type</label>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Tipo de asset</label>
                         <select name="asset_category" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors">
                             <option value="images">Imagem</option>
                             <option value="pdf">PDF / Carrossel</option>
@@ -124,26 +123,26 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Role (Opcional)</label>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Função opcional</label>
                         <input type="text" name="asset_role" placeholder="ex: cover, slide_1, final" class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brandAccent transition-colors placeholder:text-brandMuted/30">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Payload (File)</label>
+                        <label class="block text-[10px] font-mono text-brandMuted uppercase tracking-widest mb-2">Arquivos</label>
                         <div class="relative group/file">
                             <input type="file" name="files" multiple required class="w-full text-xs text-brandMuted file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-mono file:font-bold file:bg-brandAccent/20 file:text-brandAccent hover:file:bg-brandAccent/30 transition-colors cursor-pointer border border-dashed border-brandBorder/80 group-hover/file:border-brandAccent/50 p-2 rounded-lg bg-[#020205]">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-full shadow-md py-3 mt-2">EXECUTAR UPLOAD</button>
+                    <button type="submit" class="btn action-primary w-full shadow-md py-3 mt-2">Enviar arquivos</button>
                 </form>
             </div>
             
-            <div class="cockpit-card p-6">
-                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">AI Prompts Visuais</h3>
+            <div class="operation-card p-6">
+                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">Prompts visuais</h3>
                 <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/prompt" method="POST" class="space-y-5">
                     <div>
                         <textarea name="prompt_text" required rows="4" placeholder="Input Midjourney prompt here..." class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-brandSecondary focus:outline-none focus:border-brandAccentPurple resize-none transition-colors placeholder:text-brandMuted/30 font-mono"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-ghost w-full border-brandAccentPurple/30 text-brandAccentPurple hover:bg-brandAccentPurple/10">SALVAR PROMPT</button>
+                    <button type="submit" class="btn action-secondary w-full">Salvar prompt</button>
                 </form>
             </div>
         </div>
@@ -163,7 +162,7 @@
                 {% if category == 'source' %}{% set display_category = 'Fontes / Templates' %}{% endif %}
                 {% if category == 'slides' %}{% set display_category = 'Slides' %}{% endif %}
 
-                <div class="cockpit-card overflow-hidden border-t-2 border-brandBorder hover:border-brandAccent/30 transition-colors">
+                <div class="operation-card overflow-hidden hover:border-brandAccent/30 transition-colors">
                     <div class="bg-brandBg/50 p-4 border-b border-brandBorder/30 flex justify-between items-center">
                         <h4 class="text-xs font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2">
                             {% if category == 'pdf' %}
@@ -204,7 +203,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button onclick="copyToClipboardText('{{ local_url }}')" class="btn btn-ghost hover:text-white px-3 py-1.5 text-[10px]">COPIAR CAMINHO</button>
                                     <a href="{{ local_url }}" download class="btn btn-ghost hover:text-white hover:border-white px-3 py-1.5 text-[10px]">BAIXAR</a>
-                                    <a href="{{ local_url }}" target="_blank" class="btn btn-primary px-4 py-1.5 text-[10px]">ABRIR EM NOVA ABA</a>
+                                    <a href="{{ local_url }}" target="_blank" class="btn action-primary px-4 py-1.5 text-[10px]">ABRIR EM NOVA ABA</a>
                                     <button onclick="confirmDeleteAsset('{{ category }}', '{{ f.file_name }}')" class="btn btn-ghost hover:bg-status-red/20 hover:text-status-red hover:border-status-red/50 text-[10px] px-3 py-1.5 ml-2">EXCLUIR</button>
                                 </div>
                             </div>
@@ -291,7 +290,7 @@
             
             {% if item.manifest.files.prompts %}
             {% set ns.has_files = true %}
-            <div class="cockpit-card overflow-hidden border-t-2 border-brandAccentPurple/50">
+            <div class="operation-card overflow-hidden">
                 <div class="bg-brandBg/50 p-4 border-b border-brandBorder/30 flex justify-between items-center">
                     <h4 class="text-xs font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2">
                         <svg class="w-4 h-4 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
@@ -324,9 +323,9 @@
             <div class="p-12 text-center border border-dashed border-brandBorder rounded-2xl bg-brandBg/30 flex flex-col items-center">
                 <svg class="w-10 h-10 text-brandMuted mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 {% if item.assets %}
-                <p class="text-sm font-mono tracking-wide text-brandAccentCyan">ASSET VISUAL REGISTRADO, ARQUIVO AINDA NÃO ANEXADO.</p>
+                <p class="text-sm font-mono tracking-wide text-brandAccentCyan">Asset visual registrado, arquivo ainda não anexado.</p>
                 {% else %}
-                <p class="text-sm font-mono tracking-wide text-brandMuted">STORAGE ALOCADO. AGUARDANDO DADOS.</p>
+                <p class="text-sm font-mono tracking-wide text-brandMuted">Área criada. Aguardando arquivos.</p>
                 {% endif %}
             </div>
             {% endif %}
@@ -375,7 +374,7 @@
 <div id="tab-publicacao" class="tab-content hidden space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <!-- Coluna 1: Dados de Publicação Real -->
-        <div class="cockpit-card p-6 border-t-2 border-brandAccentCyan bg-[#020205]">
+        <div class="operation-card p-6 bg-[#020205]">
             <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
                 <svg class="w-5 h-5 text-brandAccentCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 Publicação Real
@@ -416,7 +415,7 @@
         </div>
         
         <!-- Coluna 2: Agendamento -->
-        <div class="cockpit-card p-6 border-t-2 border-brandAccentPurple bg-[#020205]">
+        <div class="operation-card p-6 bg-[#020205]">
             <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
                 <svg class="w-5 h-5 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 Agendamento
@@ -460,8 +459,8 @@
                 </div>
                 
                 <div class="pt-2 text-right">
-                    <button type="submit" class="btn btn-primary px-6 py-2 shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-                        SALVAR AGENDAMENTO
+                    <button type="submit" class="btn action-primary px-6 py-2">
+                        Salvar agendamento
                     </button>
                 </div>
             </form>
@@ -507,13 +506,13 @@
 <!-- TAB: METRICAS -->
 <div id="tab-metricas" class="tab-content hidden space-y-6">
     {% if item.status == 'used_as_asset' and item.linked_to_item_id %}
-    <div class="cockpit-card p-8 border-l-4 border-brandAccentCyan">
+    <div class="operation-card p-8">
         <div class="flex items-start gap-4">
             <svg class="w-6 h-6 text-brandAccentCyan mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <div>
                 <h3 class="text-lg font-bold text-white mb-2">Métricas Vinculadas</h3>
                 <p class="text-brandSecondary mb-4">Este carrossel foi usado como asset visual vinculado ao {{ item.linked_to_item_id }}. As métricas estão registradas na peça publicada.</p>
-                <a href="/publications/{{ folder_id }}/item/{{ item.linked_to_item_id }}" class="btn px-6 py-2 bg-brandAccentCyan/10 text-brandAccentCyan border border-brandAccentCyan/30 hover:bg-brandAccentCyan/20 transition-all rounded-lg text-xs font-bold uppercase tracking-widest">ABRIR {{ item.linked_to_item_id | replace('-', ' ') | upper }}</a>
+                <a href="/publications/{{ folder_id }}/item/{{ item.linked_to_item_id }}" class="btn action-secondary">Abrir {{ item.linked_to_item_id | replace('-', ' ') }}</a>
             </div>
         </div>
     </div>
@@ -523,7 +522,7 @@
     {% if m and m.total_engagements is defined %}
     {% set prev_m = item.metrics.snapshots[-2] if item.metrics and item.metrics.snapshots and item.metrics.snapshots|length > 1 else None %}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="cockpit-card p-5 border-t-2 border-brandAccentPurple">
+        <div class="operation-card p-5">
             <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Total Interações</p>
             <div class="flex items-end gap-2">
                 <p class="text-3xl font-extrabold text-white">{{ m.total_engagements }}</p>
@@ -534,15 +533,15 @@
                 {% endif %}
             </div>
         </div>
-        <div class="cockpit-card p-5 border-t-2 border-brandAccentCyan">
+        <div class="operation-card p-5">
             <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Engajamento / Impressões</p>
             <p class="text-3xl font-extrabold text-white">{{ m.engagement_rate_by_impressions }}<span class="text-base text-brandMuted font-normal">%</span></p>
         </div>
-        <div class="cockpit-card p-5 border-t-2 border-brandAccent">
+        <div class="operation-card p-5">
             <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Engajamento / Alcance</p>
             <p class="text-3xl font-extrabold text-white">{{ m.engagement_rate_by_reach }}<span class="text-base text-brandMuted font-normal">%</span></p>
         </div>
-        <div class="cockpit-card p-5 border-t-2 border-brandBorderActive">
+        <div class="operation-card p-5">
             <p class="text-[10px] text-brandMuted font-mono uppercase tracking-widest mb-1">Visitas / Alcance</p>
             <div class="flex items-end gap-2">
                 <p class="text-3xl font-extrabold text-white">{{ m.profile_view_rate_by_reach }}<span class="text-base text-brandMuted font-normal">%</span></p>
@@ -557,7 +556,7 @@
     {% endif %}
 
     {% if item.assets and item.assets.analytics %}
-    <div class="cockpit-card p-6 border border-brandBorder/50 mt-6 bg-[#020205]">
+    <div class="operation-card p-6 mt-6 bg-[#020205]">
         <h3 class="text-sm font-bold text-brandSecondary mb-4 uppercase tracking-wide flex items-center gap-2">
             <svg class="w-4 h-4 text-brandAccentCyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
             Arquivos de Origem
@@ -584,7 +583,7 @@
     {% endif %}
 
     {% if item.metrics and item.metrics.snapshots %}
-    <div class="cockpit-card p-6 border border-brandBorder/50 mt-6">
+    <div class="operation-card p-6 mt-6">
         <h3 class="text-sm font-bold text-brandSecondary mb-4 uppercase tracking-wide">Histórico de Snapshots</h3>
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-brandSecondary">
@@ -620,16 +619,16 @@
         </div>
     </div>
     {% else %}
-    <div class="cockpit-card p-6 text-center border-dashed border-brandBorder/50 mt-6">
+    <div class="operation-card p-6 text-center border-dashed border-brandBorder/50 mt-6">
         <p class="text-brandMuted">Nenhum snapshot registrado ainda.</p>
     </div>
     {% endif %}
 
-    <div class="cockpit-card p-8 mt-6">
+    <div class="operation-card p-8 mt-6">
         <div class="flex justify-between items-center mb-6 border-b border-brandBorder/30 pb-4">
             <h3 class="text-lg font-bold text-white uppercase tracking-wide flex items-center gap-2">
                 <svg class="w-5 h-5 text-brandAccentPurple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-                Adicionar Novo Snapshot
+                Adicionar snapshot
             </h3>
             <button type="button" onclick="const f = document.getElementById('form-metrics'); f.classList.toggle('hidden'); this.innerText = f.classList.contains('hidden') ? 'ADICIONAR SNAPSHOT' : 'FECHAR FORMULÁRIO'" class="btn px-4 py-2 bg-brandBorder/20 hover:bg-brandBorder/40 text-white rounded-lg text-xs font-bold transition-colors">
                 ADICIONAR SNAPSHOT
@@ -672,7 +671,7 @@
                         <div><span class="text-brandMuted block">Taxa (Alc):</span><span id="prev-tx-reach" class="font-bold text-brandAccent">0%</span></div>
                     </div>
                     <div class="mt-4 pt-3 border-t border-brandAccentCyan/20 flex items-center justify-between">
-                        <p class="text-xs text-brandAccentCyan/80 font-bold">⚠️ Revise os dados abaixo antes de salvar o snapshot.</p>
+                <p class="text-xs text-brandAccentCyan/80 font-bold">Revise os dados abaixo antes de salvar o snapshot.</p>
                     </div>
                 </div>
             </div>
@@ -782,7 +781,7 @@
                     </button>
                     <span id="ai-error-msg" class="text-xs text-status-red hidden font-bold">Não foi possível gerar a análise agora.</span>
                 </div>
-                <button type="submit" class="btn px-8 py-3 bg-brandAccentPurple hover:bg-brandAccentPurple/90 text-white shadow-lg shadow-brandAccentPurple/20 transition-all active:scale-[0.99] font-bold rounded-lg border border-brandAccentPurple/50">SALVAR SNAPSHOT</button>
+                <button type="submit" class="btn action-primary px-8 py-3">Salvar snapshot</button>
             </div>
         </form>
     </div>
@@ -1008,7 +1007,7 @@ Arquivo: ${filename}`)) {
         const el = document.getElementById(elementId);
         if(el) {
             navigator.clipboard.writeText(el.innerText || el.value).then(() => {
-                alert('Payload copiado para a área de transferência!');
+                alert('Conteúdo copiado para a área de transferência!');
             });
         }
     }
