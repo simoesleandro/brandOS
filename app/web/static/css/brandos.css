@@ -597,6 +597,172 @@ main > div {
   white-space: pre-wrap;
 }
 
+.authority-stat {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  padding: clamp(1rem, 1.8vw, 1.35rem);
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.authority-stat span,
+.authority-kicker {
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.authority-stat strong {
+  color: var(--text-primary);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.authority-pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.authority-pillar {
+  border-left: 2px solid rgba(56, 189, 248, 0.42);
+  padding-left: 1rem;
+}
+
+.authority-pillar h3 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.authority-pillar p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.authority-gap {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  padding: 0.95rem 1rem;
+}
+
+.authority-gap.is-soft {
+  background: rgba(250, 204, 21, 0.07);
+  border-color: rgba(250, 204, 21, 0.2);
+  color: #FDE68A;
+  font-size: 0.88rem;
+}
+
+.authority-project-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.authority-project-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  min-height: 300px;
+  padding: var(--space-card-compact);
+}
+
+.authority-project-card header,
+.authority-project-card footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.authority-project-card h3 {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 850;
+  line-height: 1.25;
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.authority-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.authority-card-metrics span {
+  background: rgba(2, 6, 23, 0.42);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  padding: 0.7rem;
+}
+
+.authority-card-metrics strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.authority-post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.authority-post-list a {
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px;
+  padding: 0.75rem;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.authority-post-list a:hover {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.authority-post-list strong {
+  font-size: 0.86rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.authority-project-card footer {
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.authority-project-card footer a {
+  color: var(--signal-action);
+  font-weight: 700;
+}
+
 table {
   border-collapse: separate;
   border-spacing: 0;
@@ -660,6 +826,10 @@ details > summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .authority-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .runway-step::after {
     display: none;
   }
@@ -699,6 +869,17 @@ details > summary {
 
   .runway {
     grid-template-columns: 1fr;
+  }
+
+  .authority-pillar-grid,
+  .authority-project-grid,
+  .authority-card-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .authority-project-card header,
+  .authority-project-card footer {
+    flex-direction: column;
   }
 
   .section-heading {

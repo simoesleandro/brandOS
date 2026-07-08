@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Autoridade | BrandOS{% endblock %}
+
+{% block content %}
+<div class="workbench-hero mb-8">
+    <div>
+        <div class="workbench-eyebrow">LinkedIn Authority OS</div>
+        <h1>Autoridade</h1>
+        <p>Veja se seus projetos reais estao virando narrativa publica, prova de trabalho e posts que constroem autoridade no LinkedIn.</p>
+    </div>
+    <div>
+        <a href="/cmo/recommendations" class="btn action-primary">Decidir proxima pauta</a>
+        <a href="/publications" class="btn action-secondary">Ver publicacoes</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div class="authority-stat">
+        <span>Projetos</span>
+        <strong>{{ stats.projects }}</strong>
+    </div>
+    <div class="authority-stat">
+        <span>Posts mapeados</span>
+        <strong>{{ stats.posts }}</strong>
+    </div>
+    <div class="authority-stat">
+        <span>Publicados</span>
+        <strong>{{ stats.published }}</strong>
+    </div>
+    <div class="authority-stat">
+        <span>Prontos</span>
+        <strong>{{ stats.ready }}</strong>
+    </div>
+    <div class="authority-stat">
+        <span>Sem narrativa</span>
+        <strong>{{ stats.silent_projects }}</strong>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8">
+    <section class="operation-card xl:col-span-7">
+        <div class="section-heading">
+            <div>
+                <p class="workbench-eyebrow">Pilares editoriais</p>
+                <h2 class="text-2xl font-bold text-white">O que sua autoridade precisa repetir</h2>
+            </div>
+        </div>
+        <div class="authority-pillar-grid">
+            {% for pillar in pillars %}
+            <div class="authority-pillar">
+                <h3>{{ pillar.title }}</h3>
+                <p>{{ pillar.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="operation-card xl:col-span-5">
+        <p class="workbench-eyebrow">Lacunas de movimento</p>
+        <h2 class="text-2xl font-bold text-white">Onde agir agora</h2>
+        {% if gaps %}
+        <div class="space-y-3">
+            {% for gap in gaps %}
+            <div class="authority-gap">{{ gap }}</div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-brandSecondary">O sistema esta convergindo: projetos com narrativa, fila editorial ativa e publicacoes registradas.</p>
+        {% endif %}
+    </section>
+</div>
+
+<section>
+    <div class="section-heading mb-6">
+        <div>
+            <p class="workbench-eyebrow">Portfolio que vira conteudo</p>
+            <h2 class="text-2xl font-bold text-white">Projetos e sinais de autoridade</h2>
+        </div>
+        <a href="/projects" class="btn action-secondary">Ver base tecnica</a>
+    </div>
+
+    {% if not project_cards %}
+    <div class="operation-card text-center text-brandMuted">
+        Nenhum projeto foi encontrado na base de contexto.
+    </div>
+    {% else %}
+    <div class="authority-project-grid">
+        {% for project in project_cards %}
+        <article class="authority-project-card">
+            <header>
+                <div>
+                    {% if project.category %}
+                    <span class="authority-kicker">{{ project.category }}</span>
+                    {% endif %}
+                    <h3>{{ project.name }}</h3>
+                </div>
+                {% if project.priority %}
+                <span class="badge bg-brandAccentPurple/10 text-brandAccentPurple border border-brandAccentPurple/30">{{ project.priority }}</span>
+                {% endif %}
+            </header>
+
+            <div class="authority-card-metrics">
+                <span><strong>{{ project.posts_count }}</strong> posts</span>
+                <span><strong>{{ project.published_count }}</strong> publicados</span>
+                <span><strong>{{ project.ready_count }}</strong> prontos</span>
+            </div>
+
+            {% if project.gap %}
+            <div class="authority-gap is-soft">{{ project.gap }}</div>
+            {% endif %}
+
+            {% if project.posts %}
+            <div class="authority-post-list">
+                {% for post in project.posts %}
+                <a href="{{ post.url }}">
+                    <span class="badge badge-{{ post.status }}">{{ post.status | translate_status }}</span>
+                    <strong>{{ post.title }}</strong>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <footer>
+                {% if project.links.github and project.links.github != "link não cadastrado" %}
+                <a href="{{ project.links.github }}" target="_blank">GitHub</a>
+                {% endif %}
+                {% if project.links.site and project.links.site != "link não cadastrado" %}
+                <a href="{{ project.links.site }}" target="_blank">Site/Demo</a>
+                {% endif %}
+                {% if not project.links.github and not project.links.site %}
+                <span>Links oficiais nao cadastrados</span>
+                {% endif %}
+            </footer>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
