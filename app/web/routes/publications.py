@@ -93,7 +93,7 @@ async def get_item_detail(request: Request, folder_id: str, item_id: str):
         if not details:
             return templates.TemplateResponse("error.html", {"request": request, "message": "Semana não encontrada no registro."})
             
-        item = next((i for i in details.get("items", []) if i.get("id") == item_id), None)
+        item = next((i for i in details.get("items", []) if service._get_item_identifier(i) == item_id), None)
         if not item:
             return templates.TemplateResponse("error.html", {"request": request, "message": "Peça não encontrada no registro."})
             

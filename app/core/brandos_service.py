@@ -202,7 +202,9 @@ class BrandOSService:
         history = self.list_history()
         date_prefix = folder_id[:10]
         
-        entry = next((e for e in history if e.get("date") == date_prefix or e.get("id") == folder_id), None)
+        entry = next((e for e in history if e.get("id") == folder_id), None)
+        if not entry:
+            entry = next((e for e in history if e.get("date") == date_prefix), None)
         if not entry:
             return None
             
@@ -215,7 +217,16 @@ class BrandOSService:
             item["is_main_publication"] = is_main_publication
             item["is_scheduled"] = bool(item.get("scheduled_for")) and item.get("status") != "published"
             
-            file_path = os.path.join(folder_path, item.get("file", ""))
+            item_file = item.get("file", "")
+            content_file = item.get("content_file", "")
+            if content_file:
+                file_path = os.path.join(self.base_dir, content_file.replace("/", os.sep))
+            elif item_file.startswith("data/") or item_file.startswith("data\\"):
+                file_path = os.path.join(self.base_dir, item_file.replace("/", os.sep))
+            elif item_file.startswith("generated/") or item_file.startswith("generated\\"):
+                file_path = os.path.join(self.base_dir, "data", item_file.replace("/", os.sep))
+            else:
+                file_path = os.path.join(folder_path, item_file)
             try:
                 item["file_exists"] = os.path.exists(file_path)
                 item["content_available"] = item["file_exists"]
