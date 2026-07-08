@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import unicodedata
 from datetime import datetime
 from app.workflows.weekly_workflow import run_weekly_workflow
 from app.core.services.service_container import create_brandos_services
@@ -247,19 +248,144 @@ class BrandOSService:
         if not os.path.exists(path): return ""
         with open(path, "r", encoding="utf-8") as f: return f.read()
             
+    def _normalise_project_key(self, key: str) -> str:
+        key = key.strip().lower()
+        key = unicodedata.normalize("NFKD", key).encode("ascii", "ignore").decode("ascii")
+        key = key.replace("/", "_").replace(" ", "_")
+        key = re.sub(r"[^a-z0-9_]+", "", key)
+        return key.strip("_")
+
+    def _apply_project_aliases(self, project: dict) -> dict:
+        aliases = {
+            "site_demo": "site/demo",
+            "descricao_curta": "descricao_curta",
+            "descricao_editorial": "descricao_editorial",
+            "regras_de_linguagem": "regras_linguagem",
+            "prioridade_de_conteudo": "prioridade_conteudo",
+            "visual_recomendado": "visual_recomendado",
+        }
+        for source, target in aliases.items():
+            if source in project and target not in project:
+                project[target] = project[source]
+        if "prioridade_conteudo" in project and "prioridade" not in project:
+            project["prioridade"] = project["prioridade_conteudo"]
+        return project
+
     def get_projects_list(self):
         content = self.get_official_links()
         projects = []
         current_project = None
-        for line in content.split('\n'):
+        current_key = None
+        current_value = []
+
+        def flush_field():
+            nonlocal current_key, current_value, current_project
+            if current_project is not None and current_key:
+                value = "\n".join(current_value).strip()
+                current_project[current_key] = value
+            current_key = None
+            current_value = []
+
+        for raw_line in content.splitlines():
+            line = raw_line.rstrip()
             if line.startswith("## "):
-                if current_project: projects.append(current_project)
-                current_project = {"name": line.replace("## ", "").strip()}
-            elif current_project and ":" in line:
-                key, val = line.split(":", 1)
-                current_project[key.strip().lower()] = val.strip()
-        if current_project: projects.append(current_project)
+                flush_field()
+                if current_project:
+                    projects.append(self._apply_project_aliases(current_project))
+                current_project = {"name": line.replace("## ", "", 1).strip()}
+                continue
+
+            if current_project is None:
+                continue
+
+            if line.strip() == "---":
+                flush_field()
+                continue
+
+            stripped_line = line.strip()
+            key_match = re.match(r"^([^:#][^:]{1,80}):\s*(.*)$", line)
+            is_url_value = bool(re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", stripped_line))
+            if key_match and not line.lstrip().startswith("-") and not is_url_value:
+                flush_field()
+                current_key = self._normalise_project_key(key_match.group(1))
+                inline_value = key_match.group(2).strip()
+                current_value = [inline_value] if inline_value else []
+            elif current_key:
+                current_value.append(line)
+
+        flush_field()
+        if current_project:
+            projects.append(self._apply_project_aliases(current_project))
         return projects
+
+    def save_projects_list(self, projects: list) -> None:
+        path = os.path.join(self.knowledge_dir, "links-oficiais.md")
+        os.makedirs(self.knowledge_dir, exist_ok=True)
+
+        header = [
+            "# Links oficiais dos projetos",
+            "",
+            "Este arquivo reúne os links oficiais dos projetos usados pelo BrandOS para posts, comentários, carrosséis e instruções de publicação.",
+            "",
+            "Regra importante:",
+            "- Nunca inventar links.",
+            "- Se não houver GitHub ou site/demo cadastrado, usar \"link não cadastrado\".",
+            "- Links devem ir preferencialmente no primeiro comentário do LinkedIn, não no corpo principal do post.",
+            "",
+            "---",
+            "",
+        ]
+        field_map = [
+            ("GitHub", "github"),
+            ("Site/demo", "site/demo"),
+            ("Status", "status"),
+            ("Categoria", "categoria"),
+            ("Descrição curta", "descricao_curta"),
+            ("Descrição editorial", "descricao_editorial"),
+            ("Regras de linguagem", "regras_linguagem"),
+            ("Prioridade de conteúdo", "prioridade_conteudo"),
+            ("Visual recomendado", "visual_recomendado"),
+        ]
+        sections = []
+        for project in projects:
+            name = str(project.get("name") or "").strip()
+            if not name:
+                continue
+            lines = [f"## {name}", ""]
+            for label, key in field_map:
+                value = str(project.get(key) or "").strip()
+                if key in {"github", "site/demo"} and not value:
+                    value = "link não cadastrado"
+                lines.extend([f"{label}:", value, ""])
+            lines.append("---")
+            sections.append("\n".join(lines).rstrip())
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(header + sections).rstrip() + "\n")
+
+    def update_project_profile(self, index: int, payload: dict) -> dict:
+        projects = self.get_projects_list()
+        if index < 0 or index >= len(projects):
+            raise ValueError("Projeto não encontrado.")
+
+        editable_fields = {
+            "name",
+            "github",
+            "site/demo",
+            "status",
+            "categoria",
+            "descricao_curta",
+            "descricao_editorial",
+            "regras_linguagem",
+            "prioridade_conteudo",
+            "visual_recomendado",
+        }
+        for key in editable_fields:
+            if key in payload:
+                projects[index][key] = str(payload.get(key) or "").strip()
+        projects[index] = self._apply_project_aliases(projects[index])
+        self.save_projects_list(projects)
+        return projects[index]
     def init_item_assets(self, folder_id: str, item_id: str):
         return self.asset_service.init_item_assets(folder_id, item_id)
 

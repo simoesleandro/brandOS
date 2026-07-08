@@ -28,6 +28,79 @@ def test_get_dashboard_metrics(brandos_service):
     assert metrics["pending_items"] == 1 # post-quarta (draft)
     assert metrics["linked_assets_items"] == 1 # carrossel
 
+def test_get_projects_list_parses_markdown_blocks(tmp_path):
+    import os
+    from app.core.brandos_service import BrandOSService
+
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True, exist_ok=True)
+    (knowledge_dir / "links-oficiais.md").write_text(
+        """# Links oficiais dos projetos
+
+## Sentinela RJ
+
+GitHub:
+https://github.com/simoesleandro/sentinela-rj
+
+Site/demo:
+https://sentinela-rj.fly.dev/dashboard
+
+Descrição curta:
+Monitor autônomo de contratos públicos.
+
+Regras de linguagem:
+- Não apresentar como acusação automática.
+- Reforçar revisão humana.
+
+Prioridade de conteúdo:
+Alta.
+""",
+        encoding="utf-8",
+    )
+    os.makedirs(tmp_path / "data" / "registry", exist_ok=True)
+
+    service = BrandOSService(base_dir=str(tmp_path))
+    projects = service.get_projects_list()
+
+    assert projects[0]["name"] == "Sentinela RJ"
+    assert projects[0]["github"] == "https://github.com/simoesleandro/sentinela-rj"
+    assert projects[0]["site/demo"] == "https://sentinela-rj.fly.dev/dashboard"
+    assert projects[0]["descricao_curta"] == "Monitor autônomo de contratos públicos."
+    assert "revisão humana" in projects[0]["regras_linguagem"]
+    assert projects[0]["prioridade"] == "Alta."
+
+def test_update_project_profile_rewrites_context(tmp_path):
+    from app.core.brandos_service import BrandOSService
+
+    knowledge_dir = tmp_path / "data" / "knowledge"
+    knowledge_dir.mkdir(parents=True, exist_ok=True)
+    (knowledge_dir / "links-oficiais.md").write_text(
+        """# Links oficiais dos projetos
+
+## BrandOS
+
+GitHub:
+link não cadastrado
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "registry").mkdir(parents=True, exist_ok=True)
+
+    service = BrandOSService(base_dir=str(tmp_path))
+    service.update_project_profile(
+        0,
+        {
+            "name": "BrandOS",
+            "github": "https://github.com/simoesleandro/brandOS",
+            "site/demo": "link não cadastrado",
+            "descricao_editorial": "Bastidor do sistema de marca pessoal.",
+        },
+    )
+
+    projects = service.get_projects_list()
+    assert projects[0]["github"] == "https://github.com/simoesleandro/brandOS"
+    assert projects[0]["descricao_editorial"] == "Bastidor do sistema de marca pessoal."
+
 def test_list_briefings(brandos_service):
     briefings = brandos_service.list_briefings()
     # Should list both briefings

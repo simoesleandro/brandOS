@@ -763,6 +763,208 @@ main > div {
   font-weight: 700;
 }
 
+.project-command-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.project-command-strip > div {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  min-height: 106px;
+  padding: 1.15rem;
+}
+
+.project-command-strip span,
+.project-guidance span,
+.project-editor summary,
+.project-editor-form label {
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.project-command-strip strong {
+  color: var(--text-primary);
+  display: block;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 1.35rem;
+}
+
+.project-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+
+.project-profile-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding: var(--space-card);
+}
+
+.project-profile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.project-profile-header h2 {
+  color: var(--text-primary);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  font-weight: 850;
+  line-height: 1.18;
+  margin-top: 0.35rem;
+}
+
+.project-narrative-badge {
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.42rem 0.7rem;
+  text-transform: uppercase;
+}
+
+.project-narrative-badge.is-published {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.34);
+  color: #86EFAC;
+}
+
+.project-narrative-badge.is-ready {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.34);
+  color: #7DD3FC;
+}
+
+.project-narrative-badge.is-draft {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.34);
+  color: #C4B5FD;
+}
+
+.project-narrative-badge.is-quiet {
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(148, 163, 184, 0.2);
+  color: var(--text-muted);
+}
+
+.project-profile-summary {
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.project-link-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.project-link-row a,
+.project-link-row span {
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.42rem 0.72rem;
+}
+
+.project-link-row a {
+  color: var(--signal-action);
+}
+
+.project-guidance {
+  border-left: 2px solid rgba(56, 189, 248, 0.42);
+  padding-left: 1rem;
+}
+
+.project-guidance p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0.35rem 0 0;
+}
+
+.project-editor {
+  border-top: 1px solid var(--line-soft);
+  margin-top: auto;
+  padding-top: 1rem;
+}
+
+.project-editor summary {
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.project-editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.project-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.project-editor-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.project-editor-form input,
+.project-editor-form textarea {
+  background: rgba(2, 6, 23, 0.62);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  line-height: 1.55;
+  min-height: 42px;
+  padding: 0.75rem 0.85rem;
+  text-transform: none;
+}
+
+.project-editor-form textarea {
+  resize: vertical;
+}
+
+.project-editor-form input:focus,
+.project-editor-form textarea:focus {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+  outline: none;
+}
+
+.project-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 table {
   border-collapse: separate;
   border-spacing: 0;
@@ -830,6 +1032,11 @@ details > summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .project-command-strip,
+  .project-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .runway-step::after {
     display: none;
   }
@@ -873,13 +1080,22 @@ details > summary {
 
   .authority-pillar-grid,
   .authority-project-grid,
-  .authority-card-metrics {
+  .authority-card-metrics,
+  .project-command-strip,
+  .project-profile-grid,
+  .project-form-grid {
     grid-template-columns: 1fr;
   }
 
   .authority-project-card header,
-  .authority-project-card footer {
+  .authority-project-card footer,
+  .project-profile-header {
     flex-direction: column;
+  }
+
+  .project-editor-actions,
+  .project-editor-actions .btn {
+    width: 100%;
   }
 
   .section-heading {

@@ -1,13 +1,40 @@
 {% extends "base.html" %}
 
-{% block title %}Projetos | BrandOS Console{% endblock %}
+{% block title %}Base de projetos | BrandOS{% endblock %}
 
 {% block content %}
 <div class="workbench-hero mb-8">
     <div>
-        <div class="workbench-eyebrow">Base de contexto</div>
-        <h1>Projetos Mapeados</h1>
-        <p>Visão geral dos projetos e links oficiais usados pelo BrandOS no planejamento editorial.</p>
+        <div class="workbench-eyebrow">Portfolio que vira autoridade</div>
+        <h1>Base de projetos</h1>
+        <p>Edite os links, a narrativa editorial e os cuidados de linguagem que o BrandOS usa para sugerir posts reais sobre seus trabalhos.</p>
+    </div>
+    <div>
+        <a href="/authority" class="btn action-primary">Ver autoridade</a>
+        <a href="/cmo/recommendations" class="btn action-secondary">Decidir pauta</a>
+    </div>
+</div>
+
+{% if request.query_params.get("msg") == "project_saved" %}
+<div class="authority-gap mb-6">Projeto atualizado. O CMO e a tela Autoridade já passam a usar essa base.</div>
+{% endif %}
+
+<div class="project-command-strip mb-8">
+    <div>
+        <span>Projetos mapeados</span>
+        <strong>{{ stats.total }}</strong>
+    </div>
+    <div>
+        <span>Com GitHub cadastrado</span>
+        <strong>{{ stats.with_links }}</strong>
+    </div>
+    <div>
+        <span>Com post publicado</span>
+        <strong>{{ stats.published }}</strong>
+    </div>
+    <div>
+        <span>Sem narrativa</span>
+        <strong>{{ stats.silent }}</strong>
     </div>
 </div>
 
@@ -16,47 +43,109 @@
     Nenhum projeto encontrado. O arquivo `data/knowledge/links-oficiais.md` pode estar vazio.
 </div>
 {% else %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="project-profile-grid">
     {% for p in projects %}
-    {% if p.name %}
-    <div class="operation-card p-6 flex flex-col justify-between">
-        <div>
-            <h2 class="text-xl font-bold text-white mb-2">{{ p.name }}</h2>
-            
-            {% if p.categoria %}
-            <span class="inline-block px-2 py-1 bg-brandBorder text-xs text-brandMuted rounded mb-4">{{ p.categoria }}</span>
+    <article class="project-profile-card">
+        <header class="project-profile-header">
+            <div>
+                <span class="authority-kicker">{{ p.categoria or 'Sem categoria' }}</span>
+                <h2>{{ p.name }}</h2>
+            </div>
+            <span class="project-narrative-badge is-{{ p.narrative.tone }}">{{ p.narrative.label }}</span>
+        </header>
+
+        <p class="project-profile-summary">
+            {{ p.descricao_curta or 'Adicione uma descrição curta para o CMO entender por que este projeto importa.' }}
+        </p>
+
+        <div class="authority-card-metrics">
+            <span><strong>{{ p.posts_count }}</strong> posts</span>
+            <span><strong>{{ p.published_count }}</strong> publicados</span>
+            <span><strong>{{ p.ready_count }}</strong> prontos</span>
+        </div>
+
+        <div class="project-link-row">
+            {% if p.github and p.github != "link não cadastrado" %}
+            <a href="{{ p.github }}" target="_blank">GitHub</a>
+            {% else %}
+            <span>GitHub ausente</span>
             {% endif %}
-            
-            {% if p.status %}
-            <p class="text-sm text-brandMuted mb-2"><strong>Status:</strong> {{ p.status }}</p>
-            {% endif %}
-            
-            {% if p.prioridade %}
-            <p class="text-sm text-brandMuted mb-4"><strong>Prioridade:</strong> <span class="text-white">{{ p.prioridade }}</span></p>
+            {% if p.site_demo and p.site_demo != "link não cadastrado" %}
+            <a href="{{ p.site_demo }}" target="_blank">Site/Demo</a>
+            {% else %}
+            <span>Demo ausente</span>
             {% endif %}
         </div>
-        
-        <div class="mt-4 pt-4 border-t border-brandBorder text-sm space-y-2">
-            <div>
-                <span class="text-brandMuted">GitHub:</span>
-                {% if p.github and p.github != "link não cadastrado" %}
-                <a href="{{ p.github }}" target="_blank" class="text-brandAccent hover:underline block truncate">{{ p.github }}</a>
-                {% else %}
-                <span class="text-gray-600 block">Não cadastrado</span>
-                {% endif %}
-            </div>
-            
-            <div>
-                <span class="text-brandMuted">Site/Demo:</span>
-                {% if "site/demo" in p and p["site/demo"] != "link não cadastrado" %}
-                <a href="{{ p["site/demo"] }}" target="_blank" class="text-brandAccent hover:underline block truncate">{{ p["site/demo"] }}</a>
-                {% else %}
-                <span class="text-gray-600 block">Não cadastrado</span>
-                {% endif %}
-            </div>
+
+        <div class="project-guidance">
+            <span>Direção editorial</span>
+            <p>{{ p.descricao_editorial or p.narrative.hint }}</p>
         </div>
-    </div>
-    {% endif %}
+
+        {% if p.posts %}
+        <div class="authority-post-list">
+            {% for post in p.posts %}
+            <a href="{{ post.url }}">
+                <span class="badge badge-{{ post.status }}">{{ post.status | translate_status }}</span>
+                <strong>{{ post.title }}</strong>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <details class="project-editor">
+            <summary>Editar contexto do projeto</summary>
+            <form method="post" action="/projects/{{ p.index }}/update" class="project-editor-form">
+                <label>
+                    Nome
+                    <input name="name" value="{{ p.name }}" required>
+                </label>
+                <div class="project-form-grid">
+                    <label>
+                        GitHub
+                        <input name="github" value="{{ p.github }}">
+                    </label>
+                    <label>
+                        Site/Demo
+                        <input name="site_demo" value="{{ p.site_demo }}">
+                    </label>
+                </div>
+                <div class="project-form-grid">
+                    <label>
+                        Status
+                        <input name="status" value="{{ p.status }}">
+                    </label>
+                    <label>
+                        Prioridade de conteúdo
+                        <input name="prioridade_conteudo" value="{{ p.prioridade_conteudo }}">
+                    </label>
+                </div>
+                <label>
+                    Categoria
+                    <textarea name="categoria" rows="2">{{ p.categoria }}</textarea>
+                </label>
+                <label>
+                    Descrição curta
+                    <textarea name="descricao_curta" rows="3">{{ p.descricao_curta }}</textarea>
+                </label>
+                <label>
+                    Descrição editorial
+                    <textarea name="descricao_editorial" rows="3">{{ p.descricao_editorial }}</textarea>
+                </label>
+                <label>
+                    Regras de linguagem
+                    <textarea name="regras_linguagem" rows="4">{{ p.regras_linguagem }}</textarea>
+                </label>
+                <label>
+                    Visual recomendado
+                    <textarea name="visual_recomendado" rows="2">{{ p.visual_recomendado }}</textarea>
+                </label>
+                <div class="project-editor-actions">
+                    <button type="submit" class="btn action-primary">Salvar contexto</button>
+                </div>
+            </form>
+        </details>
+    </article>
     {% endfor %}
 </div>
 {% endif %}
