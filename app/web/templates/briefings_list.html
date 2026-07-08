@@ -32,31 +32,31 @@
     {% if active_briefings %}
     <div class="grid gap-4 mb-10">
         {% for b in active_briefings %}
-        <div class="operation-list-item p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                    <h3 class="text-lg font-medium text-white">{{ b.filename }}</h3>
+        <div class="operation-list-item briefing-list-item">
+            <div class="briefing-list-copy">
+                <div class="briefing-title-row">
+                    <h3>{{ b.filename }}</h3>
                     {% if 'cmo_recommendation' in b.source.lower() or 'cmo recommendation' in b.source.lower() %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-[#1da1f2]/20 text-[#1da1f2] border border-[#1da1f2]/30 flex items-center gap-1">
+                    <span class="badge badge-agent">
                         <i class="ph ph-robot"></i> CMO Agent
                     </span>
                     {% endif %}
                     
                     {% if b.status == 'briefing_aprovado' or b.status == 'approved' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Aprovado</span>
+                    <span class="badge badge-approved">Aprovado</span>
                     {% elif b.status == 'draft' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">Rascunho</span>
+                    <span class="badge badge-draft">Rascunho</span>
                     {% elif b.status == 'reviewed' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Revisado</span>
+                    <span class="badge badge-reviewed">Revisado</span>
                     {% elif b.status == 'generated' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandAccentPurple/20 text-brandAccentPurple border border-brandAccentPurple/30">Semana Gerada</span>
+                    <span class="badge badge-generated">Semana Gerada</span>
                     {% elif b.status == 'archived' %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1"><i class="ph ph-archive"></i> Arquivado</span>
+                    <span class="badge badge-archived"><i class="ph ph-archive"></i> Arquivado</span>
                     {% else %}
-                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-brandMuted/20 text-brandMuted border border-brandMuted/30">{{ b.status }}</span>
+                    <span class="badge badge-draft">{{ b.status }}</span>
                     {% endif %}
                 </div>
-                <div class="flex items-center gap-4 text-sm text-brandMuted">
+                <div class="briefing-meta-row">
                     <span class="flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         Criado em: {{ b.created_at }}
@@ -68,30 +68,30 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-3">
-                <a href="/briefings/{{ b.filename }}" class="btn action-secondary px-4 py-2">
+            <div class="briefing-actions">
+                <a href="/briefings/{{ b.filename }}" class="btn action-secondary action-compact">
                     <i class="ph ph-eye"></i> Ver
                 </a>
                 {% if b.status == 'draft' or b.status == 'reviewed' or b.status == 'approved' or b.status == 'briefing_aprovado' %}
-                <a href="/briefings/{{ b.filename }}/edit" class="btn action-secondary px-3 py-2" title="Editar">
-                    <i class="ph ph-pencil-simple"></i>
+                <a href="/briefings/{{ b.filename }}/edit" class="btn action-secondary action-compact" title="Editar">
+                    <i class="ph ph-pencil-simple"></i> Editar
                 </a>
                 {% endif %}
                 
                 {% if b.status == 'draft' or b.status == 'reviewed' %}
-                <button onclick="approveBriefing('{{ b.filename }}')" class="btn action-secondary px-3 py-2 text-green-400 border-green-500/30 hover:bg-green-500/10" title="Aprovar">
+                <button onclick="approveBriefing('{{ b.filename }}')" class="btn action-success action-compact" title="Aprovar">
                     <i class="ph ph-check-circle"></i> Aprovar
                 </button>
                 {% endif %}
                 
                 {% if b.status == 'approved' or b.status == 'briefing_aprovado' %}
-                <button onclick="window.location.href='/briefings/{{ b.filename }}'" class="btn action-primary px-4 py-2 flex items-center gap-2" title="Gerar Semana">
+                <button onclick="window.location.href='/briefings/{{ b.filename }}'" class="btn action-primary action-compact" title="Gerar Semana">
                     <i class="ph ph-magic-wand"></i> Gerar
                 </button>
                 {% endif %}
                 
                 {% if (b.status == 'generated' or b.generated_folder) and b.generated_folder %}
-                <a href="/generated-weeks/{{ b.generated_folder }}" class="btn action-secondary px-3 py-2 flex items-center gap-2" title="Ver Semana Gerada">
+                <a href="/generated-weeks/{{ b.generated_folder }}" class="btn action-secondary action-compact" title="Ver Semana Gerada">
                     <i class="ph ph-folder"></i> Ver Semana
                 </a>
                 {% endif %}
@@ -110,15 +110,15 @@
         </summary>
         <div class="p-5 pt-0 grid gap-4 border-t border-brandBorder mt-1 pt-4">
             {% for b in archived_briefings %}
-            <div class="operation-list-item p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 opacity-75 hover:opacity-100 transition-opacity">
-                <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-1">
-                        <h3 class="text-base font-medium text-white">{{ b.filename }}</h3>
-                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
+            <div class="operation-list-item briefing-list-item opacity-75 hover:opacity-100 transition-opacity">
+                <div class="briefing-list-copy">
+                    <div class="briefing-title-row">
+                        <h3>{{ b.filename }}</h3>
+                        <span class="badge badge-archived">
                             <i class="ph ph-archive"></i> Arquivado
                         </span>
                     </div>
-                    <div class="flex items-center gap-4 text-xs text-brandMuted">
+                    <div class="briefing-meta-row">
                         <span class="flex items-center gap-1.5">
                             <i class="ph ph-calendar-blank"></i> Criado em: {{ b.created_at }}
                         </span>
@@ -127,8 +127,8 @@
                         </span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <a href="/briefings/{{ b.filename }}" class="btn action-secondary px-3 py-1.5 text-sm">
+                <div class="briefing-actions">
+                    <a href="/briefings/{{ b.filename }}" class="btn action-secondary action-compact">
                         <i class="ph ph-eye"></i> Ver
                     </a>
                 </div>

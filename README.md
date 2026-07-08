@@ -24,7 +24,7 @@
 
 <br/>
 
-> Screenshot do Web Console em breve.
+> Web Console local com Dashboard, CMO Agent, Briefings, Agenda Editorial, Publicações, Assets Visuals e Memória Estratégica.
 
 </div>
 

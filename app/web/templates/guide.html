@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Como usar | BrandOS{% endblock %}
+
+{% block content %}
+<div class="workbench-hero guide-hero mb-8">
+    <div class="guide-hero-copy">
+        <div class="workbench-eyebrow">Manual operacional</div>
+        <h1>Como usar o BrandOS</h1>
+        <p>Este é o caminho seguro para transformar uma direção estratégica em posts reais no LinkedIn, sem publicar nada automaticamente.</p>
+    </div>
+    <div class="guide-hero-actions">
+        <a href="/" class="btn action-secondary guide-action">Ir para dashboard</a>
+        <a href="/cmo/recommendations" class="btn action-primary guide-action">Começar pelo CMO</a>
+    </div>
+</div>
+
+<div class="runway mb-8">
+    <div class="runway-step active">
+        <span class="runway-label">01</span>
+        <span class="runway-title">Decidir</span>
+    </div>
+    <div class="runway-step">
+        <span class="runway-label">02</span>
+        <span class="runway-title">Briefing</span>
+    </div>
+    <div class="runway-step">
+        <span class="runway-label">03</span>
+        <span class="runway-title">Semana</span>
+    </div>
+    <div class="runway-step">
+        <span class="runway-label">04</span>
+        <span class="runway-title">Publicar</span>
+    </div>
+    <div class="runway-step">
+        <span class="runway-label">05</span>
+        <span class="runway-title">Medir</span>
+    </div>
+    <div class="runway-step">
+        <span class="runway-label">06</span>
+        <span class="runway-title">Aprender</span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-6">
+    <div class="space-y-5">
+        <div class="operation-card p-6">
+            <div class="flex flex-col md:flex-row md:items-start justify-between gap-5">
+                <div>
+                    <div class="workbench-eyebrow mb-2">Rotina recomendada</div>
+                    <h2 class="text-2xl font-bold text-white mb-3">O caminho principal</h2>
+                    <p class="text-brandSecondary max-w-3xl">Use este fluxo quando quiser movimentar seu LinkedIn com consistência. O BrandOS ajuda a decidir e preparar, mas você continua aprovando e publicando manualmente.</p>
+                </div>
+                <a href="/ops" class="btn action-secondary whitespace-nowrap">Ver operação diária</a>
+            </div>
+        </div>
+
+        {% set steps = [
+            {
+                "number": "01",
+                "title": "Veja a próxima ação no Dashboard",
+                "body": "Comece pela visão geral para entender se você deve planejar, revisar, publicar ou registrar métricas.",
+                "do": "Abra a visão geral e olhe o painel de próxima ação.",
+                "avoid": "Não comece gerando conteúdo novo se ainda existe peça pronta ou métrica pendente.",
+                "href": "/",
+                "cta": "Abrir dashboard"
+            },
+            {
+                "number": "02",
+                "title": "Peça uma recomendação ao CMO",
+                "body": "O CMO analisa histórico, memória estratégica e calendário para sugerir uma direção editorial.",
+                "do": "Leia a recomendação ativa e decida se ela faz sentido para a próxima semana.",
+                "avoid": "Não trate recomendação como post pronto. Ela é só direção estratégica.",
+                "href": "/cmo/recommendations",
+                "cta": "Abrir CMO"
+            },
+            {
+                "number": "03",
+                "title": "Transforme a recomendação em briefing",
+                "body": "O briefing é a ponte entre estratégia e produção. É aqui que você corrige rumo, escopo e tom.",
+                "do": "Crie o briefing base, edite se necessário e aprove antes de gerar a semana.",
+                "avoid": "Não gere semana sem revisar o briefing. Essa é a trava humana do sistema.",
+                "href": "/briefings",
+                "cta": "Ver briefings"
+            },
+            {
+                "number": "04",
+                "title": "Gere e revise a semana",
+                "body": "Depois do briefing aprovado, o BrandOS cria posts, assets sugeridos, comentários e instruções.",
+                "do": "Abra a semana gerada, revise peça por peça e marque o status correto.",
+                "avoid": "Não publique tudo em lote sem ler. O sistema prepara; você assina.",
+                "href": "/publications",
+                "cta": "Ver publicações"
+            },
+            {
+                "number": "05",
+                "title": "Publique manualmente no LinkedIn",
+                "body": "Use o assistente de publicação para copiar texto, conferir assets e registrar o que foi ao ar.",
+                "do": "Copie o texto final, publique no LinkedIn e marque a peça como publicada.",
+                "avoid": "Não deixe peça publicada como rascunho; isso quebra agenda e aprendizado.",
+                "href": "/calendar",
+                "cta": "Abrir agenda"
+            },
+            {
+                "number": "06",
+                "title": "Registre métricas e gere aprendizado",
+                "body": "Depois de 24h, 72h ou 7 dias, registre métricas para o sistema aprender o que funcionou.",
+                "do": "Informe impressões, alcance, engajamentos e observações qualitativas.",
+                "avoid": "Não pule métricas se você quer recomendações melhores nas próximas semanas.",
+                "href": "/strategic-memory",
+                "cta": "Ver memória"
+            }
+        ] %}
+
+        {% for step in steps %}
+        <div class="operation-card guide-step-card">
+            <div class="guide-step-grid">
+                <div class="guide-step-index">
+                    <span>Etapa</span>
+                    <strong>{{ step.number }}</strong>
+                </div>
+                <div class="min-w-0">
+                    <div class="guide-step-header">
+                        <div>
+                            <h3>{{ step.title }}</h3>
+                            <p>{{ step.body }}</p>
+                        </div>
+                        <a href="{{ step.href }}" class="btn action-secondary guide-step-cta">{{ step.cta }}</a>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="operation-list-item guide-note-card">
+                            <span>Faça</span>
+                            <p class="text-white">{{ step.do }}</p>
+                        </div>
+                        <div class="operation-list-item guide-note-card">
+                            <span>Evite</span>
+                            <p>{{ step.avoid }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <aside class="space-y-5">
+        <div class="operation-card p-6">
+            <div class="workbench-eyebrow mb-2">Regra de ouro</div>
+            <h2 class="text-xl font-bold text-white mb-3">Nada é publicado sozinho</h2>
+            <p class="text-brandSecondary text-sm leading-relaxed">O BrandOS gera recomendações, briefings e peças. A publicação no LinkedIn continua sendo manual. Você decide, revisa e confirma cada passo.</p>
+        </div>
+
+        <div class="operation-card p-6">
+            <div class="workbench-eyebrow mb-2">Quando estiver perdido</div>
+            <h2 class="text-xl font-bold text-white mb-4">Use esta ordem</h2>
+            <div class="space-y-3 text-sm">
+                <a href="/" class="operation-list-item block hover:border-brandAccentCyan/40 transition-colors">1. Dashboard: o que fazer agora?</a>
+                <a href="/ops" class="operation-list-item block hover:border-brandAccentCyan/40 transition-colors">2. Ops: quais pendências existem?</a>
+                <a href="/calendar" class="operation-list-item block hover:border-brandAccentCyan/40 transition-colors">3. Agenda: o que está pronto ou atrasado?</a>
+                <a href="/publications" class="operation-list-item block hover:border-brandAccentCyan/40 transition-colors">4. Publicações: onde estão as peças?</a>
+            </div>
+        </div>
+
+        <div class="operation-card p-6">
+            <div class="workbench-eyebrow mb-2">Glossário rápido</div>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <h3 class="text-white font-bold">CMO</h3>
+                    <p class="text-brandMuted">Decide a direção editorial. Não é conteúdo final.</p>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold">Briefing</h3>
+                    <p class="text-brandMuted">Plano revisável aprovado por você antes da geração.</p>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold">Semana</h3>
+                    <p class="text-brandMuted">Pacote de peças geradas a partir de um briefing.</p>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold">Memória</h3>
+                    <p class="text-brandMuted">Aprendizado acumulado a partir das métricas reais.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="operation-card p-6">
+            <div class="workbench-eyebrow mb-2">Checklist semanal</div>
+            <ul class="space-y-2 text-sm text-brandSecondary">
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Recomendação CMO lida</li>
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Briefing revisado e aprovado</li>
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Semana gerada</li>
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Peças revisadas</li>
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Publicação marcada como publicada</li>
+                <li><input type="checkbox" class="mr-2 accent-sky-300">Métricas registradas depois</li>
+            </ul>
+        </div>
+    </aside>
+</div>
+{% endblock %}

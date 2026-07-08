@@ -203,7 +203,7 @@
                         <span class="badge badge-{{ item.status }} opacity-50">{{ item.status | translate_status }}</span>
                     </td>
                     <td class="py-3 px-4 text-right flex items-center justify-end gap-2">
-                        <button disabled class="btn btn-ghost border-transparent text-brandMuted opacity-50 cursor-not-allowed text-[10px] px-2 py-1">MISSING</button>
+                        <button disabled class="btn btn-ghost border-transparent text-brandMuted opacity-50 cursor-not-allowed text-[10px] px-2 py-1">Ausente</button>
                         
                         {% if item.status != 'skipped' %}
                         <form action="/publications/{{ folder_id }}/item/{{ item.id }}/status?status=skipped" method="POST" class="inline">
