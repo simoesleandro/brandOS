@@ -11,11 +11,13 @@ class AssetService:
 
     def init_item_assets(self, folder_id: str, item_id: str):
         history = self.history_repo.load()
-        entry = next((e for e in history if e.get("id") == folder_id or e.get("date") == folder_id[:10]), None)
+        entry = next((e for e in history if e.get("id") == folder_id), None)
+        if not entry:
+            entry = next((e for e in history if e.get("date") == folder_id[:10]), None)
         if not entry:
             raise ValueError("Geração não encontrada.")
             
-        item = next((i for i in entry.get("items", []) if i.get("id") == item_id), None)
+        item = next((i for i in entry.get("items", []) if (i.get("item_id") or i.get("id")) == item_id), None)
         if not item:
             raise ValueError("Peça não encontrada.")
             

@@ -1057,6 +1057,18 @@ Arquivo: ${filename}`)) {
     }
 
     
+    window.generateAIAnalysis = generateAIAnalysis;
+    window.importLinkedInAnalytics = importLinkedInAnalytics;
+    window.checkDuplicateSnapshot = checkDuplicateSnapshot;
+    window.openLightbox = openLightbox;
+    window.closeLightbox = closeLightbox;
+    window.confirmDeleteAsset = confirmDeleteAsset;
+    window.confirmDeletePrompt = confirmDeletePrompt;
+    window.copyToClipboardText = copyToClipboardText;
+    window.copyToClipboard = copyToClipboard;
+    window.switchTab = switchTab;
+    window.togglePdfPreview = togglePdfPreview;
+
     window.addEventListener('DOMContentLoaded', () => {
         // Read hash first, then fallback to sessionStorage, then default to 'conteudo'
         let activeTab = 'conteudo';
