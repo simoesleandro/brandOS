@@ -63,6 +63,7 @@ Ao falar de Civic Tech, contratos públicos, PNCP, eleições ou dados públicos
 
 O post deve ser envolvente, usar quebras de linha adequadas para o LinkedIn e ter um gancho forte na primeira linha.
 Não use hashtags em excesso (máximo 3).
+Escreva em português brasileiro com acentuação correta, concordância revisada e voz humana. Não entregue texto sem acentos, exceto em hashtags.
 Escreva o texto completo do post.
 """
 
@@ -103,6 +104,8 @@ Siga as seguintes regras OBRIGATÓRIAS de edição:
 7. Mantenha o tom: humano, direto, maduro, honesto, prático, sem ser guru, sem exagero, e SEM cara de IA.
 8. Nem todo post precisa terminar com pergunta. Quando a pergunta final parecer genérica ou forçada, substitua por uma frase forte ou uma conclusão simples.
 9. NUNCA use hashtags com acento (use #TransicaoDeCarreira em vez de #TransiçãoDeCarreira).
+10. O texto final deve estar em português brasileiro com acentuação correta. Corrija palavras sem acento, concordância verbal e concordância nominal. Hashtags continuam sem acento.
+11. Remova sinais de texto gerado por IA: simetria excessiva, frases genéricas, explicações longas demais e conclusões com tom de slogan.
 
 REGRAS DE CTA:
 Nem todo post precisa de CTA em forma de pergunta.
