@@ -255,6 +255,8 @@ class CalendarService:
                 f"Visitas ao Perfil: {prev.get('profile_views', 0)}\n"
             )
             
+        snapshot_data = self._normalize_snapshot_for_analysis(snapshot_data)
+
         current_snapshot_str = (
             f"Label: {snapshot_data.get('label', '')}\n"
             f"Data: {snapshot_data.get('captured_at', '')}\n"
@@ -322,7 +324,64 @@ Diferenças calculadas:
             return analysis.strip()
         except Exception as e:
             print(f"Erro no Gemini: {e}")
-            raise e
+            return self._build_local_snapshot_analysis(snapshot_data, has_previous=bool(snapshots))
+
+    def _normalize_snapshot_for_analysis(self, snapshot_data: dict) -> dict:
+        normalized = dict(snapshot_data or {})
+
+        def as_int(key: str) -> int:
+            try:
+                return int(normalized.get(key, 0) or 0)
+            except (TypeError, ValueError):
+                return 0
+
+        impressions = as_int("impressions")
+        reach = as_int("reach")
+        total_engagements = (
+            as_int("reactions") +
+            as_int("comments") +
+            as_int("shares") +
+            as_int("saves") +
+            as_int("sends")
+        )
+        profile_views = as_int("profile_views")
+
+        normalized["impressions"] = impressions
+        normalized["reach"] = reach
+        normalized["total_engagements"] = total_engagements
+        normalized["profile_views"] = profile_views
+        normalized["engagement_rate_by_impressions"] = round((total_engagements / impressions) * 100, 2) if impressions > 0 else 0
+        normalized["engagement_rate_by_reach"] = round((total_engagements / reach) * 100, 2) if reach > 0 else 0
+        normalized["profile_view_rate_by_reach"] = round((profile_views / reach) * 100, 2) if reach > 0 else 0
+        return normalized
+
+    def _build_local_snapshot_analysis(self, snapshot_data: dict, has_previous: bool = False) -> str:
+        impressions = int(snapshot_data.get("impressions", 0) or 0)
+        reach = int(snapshot_data.get("reach", 0) or 0)
+        total_engagements = int(snapshot_data.get("total_engagements", 0) or 0)
+        engagement_rate = snapshot_data.get("engagement_rate_by_impressions", 0)
+
+        baseline = (
+            "Como ainda não há snapshot anterior, esta leitura serve como linha de base. "
+            if not has_previous else
+            "Esta leitura usa o snapshot anterior como comparação, mas foi gerada localmente porque a IA não respondeu. "
+        )
+
+        if impressions == 0 and reach == 0 and total_engagements == 0:
+            return baseline + "Ainda faltam métricas suficientes para uma análise útil. Registre impressões, alcance ou interações antes de tirar conclusões editoriais."
+
+        signal = "O principal sinal é que o post já tem dados suficientes para acompanhar a relação entre distribuição e interação."
+        if impressions > 0 and total_engagements > 0:
+            signal = f"O post teve {impressions} impressões e {total_engagements} interações, com taxa aproximada de engajamento por impressões de {engagement_rate}%."
+        elif reach > 0 and total_engagements > 0:
+            signal = f"O post alcançou {reach} pessoas e gerou {total_engagements} interações, então vale observar se o tema atrai conversa mesmo com distribuição limitada."
+
+        return (
+            baseline +
+            signal +
+            " O ponto de atenção é não concluir cedo demais: com 24 horas, a leitura ainda é inicial. "
+            "A próxima ação prática é comparar este snapshot com 48 horas e observar se comentários, reações e visitas ao perfil continuam crescendo."
+        )
 
     def import_linkedin_analytics(self, folder_id: str, item_id: str, file_path: str, original_filename: str) -> dict:
         import pandas as pd

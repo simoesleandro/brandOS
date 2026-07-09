@@ -75,6 +75,27 @@ def test_generate_snapshot_analysis_success(calendar_service):
     assert "Você é o Analytics Agent do BrandOS" in system_prompt
     assert "Diferenças calculadas:" in user_prompt
 
+def test_generate_snapshot_analysis_falls_back_when_llm_fails(calendar_service):
+    from unittest.mock import MagicMock
+
+    folder_id = "2026-01-01-semana-fake1"
+    item_id = "post-segunda"
+
+    mock_llm = MagicMock()
+    mock_llm.generate_content.side_effect = Exception("Gemini indisponível")
+    calendar_service.llm_client = mock_llm
+
+    result = calendar_service.generate_snapshot_analysis(folder_id, item_id, {
+        "impressions": "100",
+        "reach": "80",
+        "reactions": "8",
+        "comments": "2",
+    })
+
+    assert "linha de base" in result
+    assert "100 impressões" in result
+    assert "10 interações" in result
+
 def test_import_linkedin_analytics(calendar_service, tmp_path):
     from unittest.mock import patch
     

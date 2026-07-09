@@ -10,6 +10,7 @@ from app.core.llm_client import LLMClient
 from app.core.context_builder import ContextBuilder
 from app.core.file_writer import save_markdown_file
 from app.core.output_validator import validate_or_retry_generation
+from app.core.text_quality import is_linkedin_post_text_quality_ok
 from app.utils.logger import get_logger
 from app.utils.dates import get_weekly_folder_name
 from app.prompts.workflow_prompts import CHECKLIST_TEMPLATE
@@ -103,7 +104,13 @@ def run_weekly_workflow(base_dir: str = ".", request: WeeklyGenerationRequest | 
         draft = validate_or_retry_generation(lambda: copywriter.run(super_context, plan, post["id"]), f"{post['file']} (Rascunho)")
         
         # O Editor revisa
-        final_text = validate_or_retry_generation(lambda: editor.run(draft, super_context), post["file"])
+        final_text = validate_or_retry_generation(
+            lambda: editor.run(draft, super_context),
+            post["file"],
+            max_retries=2,
+            quality_validator=is_linkedin_post_text_quality_ok,
+            warning_message="O post pode conter problemas de acentuação em português brasileiro. Revise antes de publicar.",
+        )
         
         logger.info(f"[BrandOS] Salvando {post['file']}...")
         save_markdown_file(output_dir, post["file"], final_text)

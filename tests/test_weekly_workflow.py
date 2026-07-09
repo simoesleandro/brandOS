@@ -11,8 +11,8 @@ from app.workflows.weekly_workflow import (
 class FakeLLM:
     def generate_content(self, system_prompt: str, prompt: str) -> str:
         return (
-            "Conteudo gerado para teste do BrandOS com tamanho suficiente "
-            "para passar pela validacao do workflow semanal."
+            "Conteúdo gerado para teste do BrandOS com tamanho suficiente "
+            "para passar pela validação do workflow semanal."
         )
 
 

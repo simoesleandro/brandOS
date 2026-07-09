@@ -25,7 +25,7 @@ def is_output_complete(text: str) -> bool:
     
     return True
 
-def validate_or_retry_generation(generation_func, filename: str, max_retries: int = 1) -> str:
+def validate_or_retry_generation(generation_func, filename: str, max_retries: int = 1, quality_validator=None, warning_message: str | None = None) -> str:
     """Gera o conteúdo, valida e tenta novamente se estiver cortado."""
     logger.info(f"[BrandOS] Gerando {filename}...")
     
@@ -33,18 +33,26 @@ def validate_or_retry_generation(generation_func, filename: str, max_retries: in
     
     logger.info(f"[BrandOS] Validando {filename}...")
     
-    if is_output_complete(content):
+    def is_valid(value: str) -> bool:
+        if not is_output_complete(value):
+            return False
+        if quality_validator and not quality_validator(value):
+            return False
+        return True
+
+    if is_valid(content):
         return content
         
-    logger.warning(f"[BrandOS] Saída incompleta detectada em {filename}. Tentando gerar novamente...")
+    logger.warning(f"[BrandOS] Saída inválida detectada em {filename}. Tentando gerar novamente...")
     
     for attempt in range(max_retries):
         content = generation_func()
-        if is_output_complete(content):
+        if is_valid(content):
             logger.info(f"[BrandOS] Validação bem-sucedida na tentativa {attempt + 1} para {filename}.")
             return content
             
     # Se falhou em todos os retries
-    warning_header = "> [!WARNING]\n> Aviso do BrandOS: A geração deste arquivo pode estar incompleta ou ter sido cortada pela API.\n\n"
+    message = warning_message or "A geração deste arquivo pode estar incompleta, ter sido cortada pela API ou falhar em critérios de qualidade."
+    warning_header = f"> [!WARNING]\n> Aviso do BrandOS: {message}\n\n"
     logger.error(f"[BrandOS] Falha definitiva na validação de {filename} após {max_retries} retries. Salvando com aviso.")
     return warning_header + content
