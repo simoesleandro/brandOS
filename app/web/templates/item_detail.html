@@ -137,7 +137,15 @@
             </div>
             
             <div class="operation-card p-6">
-                <h3 class="text-sm font-bold text-white mb-5 uppercase tracking-wide">Prompts visuais</h3>
+                <div class="flex items-start justify-between gap-3 mb-5">
+                    <div>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wide">Prompts visuais</h3>
+                        <p class="text-xs text-brandMuted mt-1 leading-relaxed">Gere um prompt alinhado ao texto do post, ao projeto e ao tom de autoridade.</p>
+                    </div>
+                    <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/generate-image-prompt" method="POST">
+                        <button type="submit" class="btn action-primary px-3 py-2 text-[10px] whitespace-nowrap">Gerar prompt</button>
+                    </form>
+                </div>
                 <form action="/publications/{{ folder_id }}/item/{{ item.id }}/assets/prompt" method="POST" class="space-y-5">
                     <div>
                         <textarea name="prompt_text" required rows="4" placeholder="Input Midjourney prompt here..." class="w-full bg-[#020205] border border-brandBorder/50 rounded-lg px-4 py-3 text-sm text-brandSecondary focus:outline-none focus:border-brandAccentPurple resize-none transition-colors placeholder:text-brandMuted/30 font-mono"></textarea>

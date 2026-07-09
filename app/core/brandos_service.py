@@ -406,6 +406,9 @@ class BrandOSService:
     def add_item_asset_prompt(self, folder_id: str, item_id: str, prompt_text: str):
         return self.asset_service.add_item_asset_prompt(folder_id, item_id, prompt_text)
 
+    def generate_item_image_prompt(self, folder_id: str, item_id: str):
+        return self.asset_service.generate_item_image_prompt(folder_id, item_id)
+
     def get_recommended_prompts(self, folder_id: str):
         return self.asset_service.get_recommended_prompts(folder_id)
 

@@ -193,6 +193,19 @@ async def add_prompt(
     return RedirectResponse(url=referer or f"/publications/{folder_id}/item/{item_id}", status_code=303)
 
 
+@router.post("/{folder_id}/item/{item_id}/assets/generate-image-prompt")
+async def generate_image_prompt(request: Request, folder_id: str, item_id: str):
+    try:
+        service.generate_item_image_prompt(folder_id, item_id)
+    except Exception as e:
+        print(f"Erro ao gerar prompt visual: {e}")
+    referer = request.headers.get("referer")
+    base_url = referer or f"/publications/{folder_id}/item/{item_id}"
+    if "#tab-" in base_url:
+        base_url = base_url.split("#tab-")[0]
+    return RedirectResponse(url=f"{base_url}#tab-assets", status_code=303)
+
+
 @router.post("/{folder_id}/item/{item_id}/assets/import-prompt")
 async def import_prompt(
     request: Request, 

@@ -167,6 +167,40 @@ class AssetService:
         
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+    def generate_item_image_prompt(self, folder_id: str, item_id: str):
+        manifest_path = self.init_item_assets(folder_id, item_id)
+        entry, item = self._find_entry_and_item(folder_id, item_id)
+        post_content = self._read_item_content(entry, item)
+        prompt_text = self._build_image_prompt(entry, item, post_content)
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        if "prompts" not in manifest["files"] or not isinstance(manifest["files"]["prompts"], list):
+            manifest["files"]["prompts"] = []
+
+        for prompt in manifest["files"]["prompts"]:
+            if isinstance(prompt, dict) and prompt.get("source") == "brandos_image_prompt_generator":
+                prompt["content"] = prompt_text
+                prompt["updated_at"] = datetime.now().isoformat()
+                prompt["status"] = "updated"
+                break
+        else:
+            import uuid
+            manifest["files"]["prompts"].append({
+                "id": str(uuid.uuid4()),
+                "title": "Prompt visual gerado pelo BrandOS",
+                "content": prompt_text,
+                "source": "brandos_image_prompt_generator",
+                "created_at": datetime.now().isoformat(),
+                "status": "saved"
+            })
+
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+        return prompt_text
             
     def get_recommended_prompts(self, folder_id: str):
         import glob
@@ -228,6 +262,98 @@ class AssetService:
         
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+    def _find_entry_and_item(self, folder_id: str, item_id: str):
+        history = self.history_repo.load()
+        entry = next((e for e in history if e.get("id") == folder_id), None)
+        if not entry:
+            entry = next((e for e in history if e.get("date") == folder_id[:10]), None)
+        if not entry:
+            raise ValueError("Geração não encontrada.")
+
+        item = next((i for i in entry.get("items", []) if (i.get("item_id") or i.get("id")) == item_id), None)
+        if not item:
+            raise ValueError("Peça não encontrada.")
+        return entry, item
+
+    def _read_item_content(self, entry: dict, item: dict) -> str:
+        candidates = []
+        content_file = item.get("content_file")
+        item_file = item.get("file", "")
+
+        if content_file:
+            candidates.append(os.path.join(self.history_repo.base_dir, content_file.replace("/", os.sep)))
+        if item_file.startswith("data/") or item_file.startswith("data\\"):
+            candidates.append(os.path.join(self.history_repo.base_dir, item_file.replace("/", os.sep)))
+        elif item_file.startswith("generated/") or item_file.startswith("generated\\"):
+            candidates.append(os.path.join(self.history_repo.base_dir, "data", item_file.replace("/", os.sep)))
+        elif item_file:
+            candidates.append(os.path.join(self.history_repo.base_dir, "data", "generated", entry.get("id", ""), item_file))
+
+        for path in candidates:
+            if path and os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+        return ""
+
+    def _build_image_prompt(self, entry: dict, item: dict, post_content: str) -> str:
+        project = entry.get("project") or item.get("project") or "projeto"
+        title = item.get("title") or item.get("id") or "post"
+        content_lower = (post_content or "").lower()
+
+        visual_subject = "um painel editorial de tecnologia e dados"
+        palette = "dark interface, black graphite background, cyan and subtle violet accents"
+        if "sentinela" in f"{project} {title} {content_lower}".lower():
+            visual_subject = "um dashboard realista do Sentinela RJ com cards de contratos públicos, anomalias, risco alto, fornecedores e gráficos analíticos"
+            palette = "black and dark graphite interface, red accents for alerts, white typography, restrained orange only inside charts"
+        elif "brandos" in f"{project} {title} {content_lower}".lower():
+            visual_subject = "um cockpit editorial do BrandOS conectando post, métricas, aprendizados e próximos passos"
+
+        angle = "construção em público, bastidor técnico e decisão humana"
+        if any(term in content_lower for term in ["métrica", "alcance", "impress", "engaj"]):
+            angle = "leitura de métricas, aprendizado editorial e melhoria do próximo post"
+        elif any(term in content_lower for term in ["contratos", "pncp", "dados públicos", "civic"]):
+            angle = "dados públicos, triagem responsável e revisão humana"
+
+        excerpt = self._compact_post_excerpt(post_content)
+        optional_text = f"{project}\nDados públicos + revisão humana" if "sentinela" in project.lower() else f"{project}\nConstrução em público"
+
+        return f"""# Prompt de imagem para o asset
+
+## Uso recomendado
+Imagem de apoio para LinkedIn, proporção 16:9 ou 1200x627, com visual técnico e limpo. Use como imagem única ou capa de carrossel.
+
+## Direção criativa
+Tema: {project}
+Peça: {title}
+Ângulo editorial: {angle}
+Visual principal: {visual_subject}
+
+## Prompt principal
+Create a professional LinkedIn visual for a Brazilian civic-tech/product-building post. Show {visual_subject}. Mood: serious, technical, trustworthy, human-reviewed, build-in-public. Style: high-fidelity product dashboard mockup, clean editorial composition, {palette}, balanced spacing, modern SaaS UI, sharp typography, subtle depth, no clutter. Composition: left side with a short headline area and right side with a faithful dashboard preview, visible cards and charts, enough negative space, readable hierarchy. Include a small human-review cue through subtle UI labels or review/check elements, but do not show faces. The image should communicate: {angle}. Aspect ratio 16:9, suitable for LinkedIn feed, crisp details, professional lighting.
+
+## Texto curto opcional na imagem
+{optional_text}
+
+## Evitar
+- não usar brasões, logos oficiais ou símbolos governamentais reais;
+- não inventar denúncias, crimes ou acusações;
+- não usar estética policialesca, sensacionalista ou conspiratória;
+- não colocar números falsos muito específicos se eles não vierem do produto;
+- não encher a imagem de texto pequeno ilegível;
+- não usar verde sem motivo visual claro;
+- não usar tom de propaganda exagerada.
+
+## Contexto do post
+{excerpt}
+"""
+
+    def _compact_post_excerpt(self, post_content: str, max_chars: int = 700) -> str:
+        cleaned = re.sub(r"#\s*Post[^\n]*", "", post_content or "", flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if len(cleaned) <= max_chars:
+            return cleaned or "Conteúdo do post não encontrado no disco."
+        return cleaned[:max_chars].rsplit(" ", 1)[0].strip() + "..."
 
     def delete_item_asset(self, folder_id: str, item_id: str, category: str, filename: str):
         from pathlib import Path

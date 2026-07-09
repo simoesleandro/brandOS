@@ -117,6 +117,42 @@ def test_import_recommended_prompt(asset_service):
     assert prompts[0]["content"] == "Generated prompt"
     assert prompts[0]["source"] == "generated"
 
+def test_generate_item_image_prompt_from_post(asset_service):
+    folder_id = "2026-01-01-semana-fake1"
+    item_id = "post-segunda"
+    asset_service.init_item_assets(folder_id, item_id)
+
+    prompt = asset_service.generate_item_image_prompt(folder_id, item_id)
+
+    manifest_path = os.path.join(asset_service.assets_dir, f"{folder_id}-{item_id}", "manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    prompts = manifest["files"].get("prompts", [])
+    assert len(prompts) == 1
+    assert prompts[0]["source"] == "brandos_image_prompt_generator"
+    assert "Prompt de imagem para o asset" in prompt
+    assert "LinkedIn" in prompt
+    assert "Evitar" in prompt
+
+def test_generate_item_image_prompt_updates_existing_generated_prompt(asset_service):
+    folder_id = "2026-01-01-semana-fake1"
+    item_id = "post-segunda"
+
+    asset_service.generate_item_image_prompt(folder_id, item_id)
+    asset_service.generate_item_image_prompt(folder_id, item_id)
+
+    manifest_path = os.path.join(asset_service.assets_dir, f"{folder_id}-{item_id}", "manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    prompts = [
+        prompt for prompt in manifest["files"].get("prompts", [])
+        if prompt.get("source") == "brandos_image_prompt_generator"
+    ]
+    assert len(prompts) == 1
+    assert prompts[0]["status"] == "updated"
+
 def test_delete_item_asset(asset_service):
     folder_id = "2026-01-01-semana-fake1"
     item_id = "post-segunda"
